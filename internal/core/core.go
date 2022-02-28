@@ -18,6 +18,5 @@ func Upload(c *cli.Context) error {
 	if err != nil {
 		return errors.New("core upload: invalid store")
 	}
-	fmt.Println(cfg)
-	return nil
+	return err
 }
