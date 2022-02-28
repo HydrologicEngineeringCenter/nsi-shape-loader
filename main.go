@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// main entry point into app containing an args parser wrapper
 func main() {
 	var dbuser, dbpass, dbname, dbhost, dbport, file string
 	app := &cli.App{
@@ -51,9 +52,9 @@ func main() {
 				Required:    true,
 			},
 			&cli.StringFlag{
-				Name:        "shapefile",
+				Name:        "filepath",
 				Aliases:     []string{"d"},
-				Usage:       "input shapefile",
+				Usage:       "path to input shapefile",
 				Destination: &file,
 				Required:    true,
 			},
