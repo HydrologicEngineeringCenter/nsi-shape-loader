@@ -1,24 +1,24 @@
 version: "3.9"
 services:
 
-  nsiloader:
-    container_name: NSILOADER_DEV
+  shapeloader:
+    container_name: SHAPELOADER_DEV
     build:
       context: .
       dockerfile: dev.Dockerfile
     ports:
       - 3031:3031
     volumes:
-      - .:/workspaces/nsi-shape-loader
+      - .:/workspaces/shape-sql-loader
     env_file:
       - .devcontainer/devcontainer.env
-    working_dir: /workspaces/nsi-shape-loader
+    working_dir: /workspaces/shape-sql-loader
     tty: true
     entrypoint: ["bash"]
 
   postgis:
     image: kartoza/postgis
-    container_name: POSTGISNSI_DEV
+    container_name: POSTGIS_SHAPELOADER_DEV
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASS=notPassword
