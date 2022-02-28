@@ -8,14 +8,12 @@ import (
 )
 
 type Config struct {
-	Dbuser    string
-	Dbpass    string
-	Dbname    string
-	Dbhost    string
-	Dbstore   string
-	Dbdriver  string
-	DBSSLMode string
-	Dbport    string
+	Dbuser   string
+	Dbpass   string
+	Dbname   string
+	Dbhost   string
+	Dbport   string
+	FilePath string
 }
 
 func (c *Config) Rdbmsconfig() dq.RdbmsConfig {
@@ -25,15 +23,22 @@ func (c *Config) Rdbmsconfig() dq.RdbmsConfig {
 		Dbhost:   c.Dbhost,
 		Dbport:   c.Dbport,
 		Dbname:   c.Dbname,
-		DbDriver: c.Dbdriver,
-		DbStore:  c.Dbstore,
+		DbDriver: "postgres",
+		DbStore:  "pgx",
 	}
 }
 
 // NewConfig generates new config from cli args context
 func NewConfig(c *cli.Context) (Config, error) {
-	if c.NArg() < 0 {
-		return Config{}, errors.New("newconfig: not enough arguments")
+	if c.NumFlags() < 5 {
+		return Config{}, errors.New("newconfig: not enough input flags")
 	}
-	return Config{}, nil
+	return Config{
+		Dbuser:   c.String("dbuser"),
+		Dbpass:   c.String("dbpass"),
+		Dbhost:   c.String("dbhost"),
+		Dbport:   c.String("dbport"),
+		Dbname:   c.String("dbname"),
+		FilePath: c.String("filepath"),
+	}, nil
 }
