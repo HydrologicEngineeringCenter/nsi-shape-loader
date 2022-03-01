@@ -20,6 +20,6 @@ func NewStore(c config.Config) (*PSStore, error) {
 		log.Printf("Connected as %s to database %s:%s/%s", c.Dbuser, c.Dbhost, c.Dbport, c.Dbname)
 	}
 
-	ss := PSStore{ds}
-	return &ss, nil
+	st := PSStore{ds}
+	return &st, nil
 }
