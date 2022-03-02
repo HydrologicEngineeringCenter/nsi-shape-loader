@@ -1,0 +1,54 @@
+package model
+
+// ducktyping in go with reflect is a bad idea
+type Point struct {
+	Bid        string
+	Cbfips2010 string
+	St_damcat  string
+	Occtype    string
+	Num_story  string
+	Height     string
+	Sqft       string
+	Ftprntsqft string
+	Found_ht   string
+	Extwall    string
+	Fndtype    string
+	Bsmnt      string
+	P_extwall  string
+	P_fndtype  string
+	P_bsmnt    string
+	Total_room string
+	Bedrooms   string
+	Total_bath string
+	P_garage   string
+	Parkingsp  string
+	Yrbuilt    string
+	Med_yr_blt string
+	Naics      string
+	Bldcostcat string
+	Val_struct string
+	Val_cont   string
+	Val_vehic  string
+	Numvehic   string
+	Ftprntid   string
+	Ftprntsrc  string
+	Source     string
+	Resunits   string
+	Empnum     string
+	Students   string
+	Surplus    string
+	Othinstpop string
+	Nursghmpop string
+	Pop2amu65  string
+	Pop2amo65  string
+	Pop2pmu65  string
+	Pop2pmo65  string
+	O65disable string
+	U65disable string
+	X          string
+	Y          string
+	Apn        string
+	Censregion string
+	Firmzone   string
+	Firmdate   string
+}

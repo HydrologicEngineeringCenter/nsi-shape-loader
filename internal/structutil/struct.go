@@ -3,7 +3,6 @@ package structutil
 import (
 	"fmt"
 	"reflect"
-	"strings"
 )
 
 func SetField(item interface{}, fieldName string, value interface{}) error {
@@ -11,19 +10,10 @@ func SetField(item interface{}, fieldName string, value interface{}) error {
 	if !v.CanAddr() {
 		return fmt.Errorf("cannot assign to the item passed, item must be a pointer in order to assign")
 	}
-	// It's possible we can cache this, which is why precompute all these ahead of time.
-	findJsonName := func(t reflect.StructTag) (string, error) {
-		if jt, ok := t.Lookup("json"); ok {
-			return strings.Split(jt, ",")[0], nil
-		}
-		return "", fmt.Errorf("tag provided does not define a json tag: " + fieldName)
-	}
 	fieldNames := map[string]int{}
 	for i := 0; i < v.NumField(); i++ {
 		typeField := v.Type().Field(i)
-		tag := typeField.Tag
-		jname, _ := findJsonName(tag)
-		fieldNames[jname] = i
+		fieldNames[typeField.Name] = i
 	}
 
 	fieldNum, ok := fieldNames[fieldName]

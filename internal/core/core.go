@@ -2,13 +2,12 @@ package core
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/model"
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/store"
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/structutil"
-	dynamicstruct "github.com/Ompluscator/dynamic-struct"
 	"github.com/jonas-p/go-shp"
 	"github.com/urfave/cli/v2"
 	dq "github.com/usace/goquery"
@@ -32,43 +31,28 @@ func Upload(cfg config.Config) error {
 
 	fields := shpf.Fields()
 
-	// dynamically allocate struct fields based on shp file columns
-	baseDef := dynamicstruct.NewStruct().
-		Build().
-		New()
-	var definition dynamicstruct.DynamicStruct
-	for _, f := range fields {
-		colName := strings.ToLower(f.String())
-		definition = dynamicstruct.ExtendStruct(baseDef).
-			AddField(strings.Title(colName), "", `db:"`+colName+`"`).
-			Build()
-	}
-
-	templateType := reflect.TypeOf(definition)
-
 	var insertTable = dq.TableDataSet{
 		Name:       cfg.Dbtablename,
 		Statements: map[string]string{},
-		Fields:     definition,
+		Fields:     model.Point{},
 	}
 
-	// dataSlice := reflect.SliceOf(templateType)
 	batchSize := 1000
-	dataSlice := definition.NewSliceOfStructs()
-	fmt.Println(dataSlice)
+	var records []model.Point
 	for shpf.Next() {
 		i, _ := shpf.Shape()
 
 		// construct data struct from point
-		newDynStruct := reflect.ValueOf(templateType)
+		var newPoint model.Point
 		for j, f := range fields {
 			val := shpf.ReadAttribute(i, j)
-			structutil.SetField(&newDynStruct, strings.Title(strings.ToLower(f.String())), val)
+			fieldStr := strings.Title(strings.ToLower(f.String()))
+			structutil.SetField(&newPoint, fieldStr, val)
 		}
-		// dataSlice = append(dataSlice, newDynStruct)
+		records = append(records, newPoint)
 		if i%batchSize == 0 {
 			err = st.DS.Insert(&insertTable).
-				Records(&dataSlice).
+				Records(&records).
 				Batch(true).
 				BatchSize(batchSize).
 				Execute()
