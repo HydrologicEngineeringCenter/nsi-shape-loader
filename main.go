@@ -13,7 +13,7 @@ func main() {
 	app := &cli.App{
 		Name:   "nsi-loader",
 		Usage:  "upload nsi shapefile to postgis database",
-		Action: core.Upload,
+		Action: core.Core,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "dbuser",
