@@ -1,5 +1,11 @@
 package structutil
 
+import (
+	"fmt"
+	"reflect"
+	"strings"
+)
+
 func SetField(item interface{}, fieldName string, value interface{}) error {
 	v := reflect.ValueOf(item).Elem()
 	if !v.CanAddr() {
@@ -10,7 +16,7 @@ func SetField(item interface{}, fieldName string, value interface{}) error {
 		if jt, ok := t.Lookup("json"); ok {
 			return strings.Split(jt, ",")[0], nil
 		}
-		return "", fmt.Errorf("tag provided does not define a json tag", fieldName)
+		return "", fmt.Errorf("tag provided does not define a json tag: " + fieldName)
 	}
 	fieldNames := map[string]int{}
 	for i := 0; i < v.NumField(); i++ {
