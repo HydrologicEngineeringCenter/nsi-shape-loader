@@ -1,8 +1,10 @@
 package structutil
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 )
 
 func SetField(item interface{}, fieldName string, value interface{}) error {
@@ -21,6 +23,32 @@ func SetField(item interface{}, fieldName string, value interface{}) error {
 		return fmt.Errorf("field %s does not exist within the provided item", fieldName)
 	}
 	fieldVal := v.Field(fieldNum)
-	fieldVal.Set(reflect.ValueOf(value))
-	return nil
+	valueKind := fieldVal.Kind()
+	var err error
+	switch valueKind {
+	case reflect.Bool:
+		coercedVal, err := strconv.ParseBool(value.(string))
+		if err != nil {
+			return err
+		}
+		fieldVal.Set(reflect.ValueOf(coercedVal))
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		coercedVal, err := strconv.ParseInt(value.(string), 0, 64)
+		if err != nil {
+			return err
+		}
+		// fieldVal.SetString(reflect.ValueOf(coercedVal))
+		fieldVal.SetInt(coercedVal)
+	case reflect.Float32, reflect.Float64:
+		coercedVal, err := strconv.ParseFloat(value.(string), 64)
+		if err != nil {
+			return err
+		}
+		fieldVal.SetFloat(coercedVal)
+	case reflect.String:
+		fieldVal.Set(reflect.ValueOf(value))
+	default:
+		err = errors.New("value not coercible")
+	}
+	return err
 }

@@ -2,53 +2,53 @@ package model
 
 // ducktyping in go with reflect is a bad idea
 type Point struct {
-	Bid        string
-	Cbfips2010 string
-	St_damcat  string
-	Occtype    string
-	Num_story  string
-	Height     string
-	Sqft       string
-	Ftprntsqft string
-	Found_ht   string
-	Extwall    string
-	Fndtype    string
-	Bsmnt      string
-	P_extwall  string
-	P_fndtype  string
-	P_bsmnt    string
-	Total_room string
-	Bedrooms   string
-	Total_bath string
-	P_garage   string
-	Parkingsp  string
-	Yrbuilt    string
-	Med_yr_blt string
-	Naics      string
-	Bldcostcat string
-	Val_struct string
-	Val_cont   string
-	Val_vehic  string
-	Numvehic   string
-	Ftprntid   string
-	Ftprntsrc  string
-	Source     string
-	Resunits   string
-	Empnum     string
-	Students   string
-	Surplus    string
-	Othinstpop string
-	Nursghmpop string
-	Pop2amu65  string
-	Pop2amo65  string
-	Pop2pmu65  string
-	Pop2pmo65  string
-	O65disable string
-	U65disable string
-	X          string
-	Y          string
-	Apn        string
-	Censregion string
-	Firmzone   string
-	Firmdate   string
+	Bid        string  `db:"bid"` //
+	Cbfips2010 string  `db:"cbfips2010"`
+	St_damcat  string  `db:"st_damcat"`
+	Occtype    string  `db:"occtype"`
+	Num_story  int32   `db:"num_story"` //
+	Height     string  `db:"height"`    //
+	Sqft       float64 `db:"sqft"`
+	Ftprntsqft float64 `db:"ftprintsqft"` //
+	Found_ht   float64 `db:"found_ht"`
+	Extwall    string  `db:"extwall"` //
+	Fndtype    string  `db:"found_type"`
+	Bsmnt      int32   `db:"basement"`
+	P_extwall  string  `db:"p_extwall"`  //
+	P_fndtype  string  `db:"p_fndtype"`  //
+	P_bsmnt    string  `db:"p_bsmnt"`    //
+	Total_room int32   `db:"total_room"` //
+	Bedrooms   int32   `db:"bedrooms"`
+	Total_bath int32   `db:"total_bath"` //
+	P_garage   string  `db:"p_garage"`   //
+	Parkingsp  int32   `db:"parkingsp"`  //
+	Yrbuilt    int32   `db:"yrbuilt"`
+	Med_yr_blt int32   `db:"med_yr_blt"`
+	Naics      string  `db:"naics"`      //
+	Bldcostcat string  `db:"bldcostcat"` //
+	Val_struct float64 `db:"val_struct"`
+	Val_cont   float64 `db:"val_cont"`
+	Val_vehic  float64 `db:"val_vehic"`
+	Numvehic   int32   `db:"val_vehic"` //
+	Ftprntid   string  `db:"ftprintid"` //
+	Ftprntsrc  string  `db:"ftprntsrc"` //
+	Source     string  `db:"source"`
+	Resunits   int32   `db:"resunits"`
+	Empnum     int32   `db:"empnum"`
+	Students   int32   `db:"students"`
+	Surplus    int32   `db:"surplus"`    //
+	Othinstpop int32   `db:"othinstpop"` //
+	Nursghmpop int32   `db:"nursghmpop"` //
+	Pop2amu65  int32   `db:"pop2amu65"`
+	Pop2amo65  int32   `db:"pop2pmo65"`
+	Pop2pmu65  int32   `db:"pop2pmo65"`
+	Pop2pmo65  int32   `db:"pop2pmo65"`
+	O65disable float64 `db:"o65disable"`
+	U65disable float64 `db:"u65disable"`
+	X          float64 `db:"x"`
+	Y          float64 `db:"y"`
+	Apn        string  `db:"apn"`        //
+	Censregion string  `db:"censregion"` //
+	Firmzone   string  `db:"firmzone"`
+	Firmdate   string  `db:"firmdate"` //
 }
