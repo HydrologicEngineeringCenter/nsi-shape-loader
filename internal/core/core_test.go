@@ -13,7 +13,7 @@ func TestCore(t *testing.T) {
 		Dbuser:      "admin",
 		Dbpass:      "notPassword",
 		Dbname:      "gis",
-		Dbtablename: "nsi",
+		Dbtablename: "nsi_v2022",
 		Dbhost:      "host.docker.internal",
 		Dbport:      "25432",
 		FilePath:    "/workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp",

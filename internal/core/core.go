@@ -37,7 +37,7 @@ func Upload(cfg config.Config) error {
 		Fields:     model.Point{},
 	}
 
-	batchSize := 1000
+	batchSize := 20000
 	var records []model.Point
 	for shpf.Next() {
 		i, _ := shpf.Shape()
@@ -50,13 +50,29 @@ func Upload(cfg config.Config) error {
 			structutil.SetField(&newPoint, fieldStr, val)
 		}
 		records = append(records, newPoint)
-		if i%batchSize == 0 {
+		// Batch upload on reaching batchsize limit
+		if i != 0 && i%batchSize == 0 {
 			err = st.DS.Insert(&insertTable).
 				Records(&records).
 				Batch(true).
-				BatchSize(batchSize).
+				BatchSize(len(records)).
 				Execute()
+			if err != nil {
+				return err
+			}
+			fmt.Println("Proccessed " + fmt.Sprint(i) + " records")
+			records = []model.Point{}
 		}
 	}
+	// batch upload last
+	err = st.DS.Insert(&insertTable).
+		Records(&records).
+		Batch(true).
+		BatchSize(len(records)).
+		Execute()
+	if err != nil {
+		return err
+	}
+	fmt.Println("Processing finished.")
 	return err
 }
