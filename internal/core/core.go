@@ -38,6 +38,7 @@ func Upload(cfg config.Config) error {
 	}
 
 	batchSize := 20000
+	lastRecordIdx := shpf.AttributeCount() - 1
 	var records []model.Point
 	for shpf.Next() {
 		i, _ := shpf.Shape()
@@ -51,27 +52,25 @@ func Upload(cfg config.Config) error {
 		}
 		records = append(records, newPoint)
 		// Batch upload on reaching batchsize limit
-		if i != 0 && i%batchSize == 0 {
-			err = st.DS.Insert(&insertTable).
-				Records(&records).
-				Batch(true).
-				BatchSize(len(records)).
-				Execute()
+		if (i != 0 && i%batchSize == 0) || i == lastRecordIdx {
+			if i == lastRecordIdx {
+				// batching the last odd lot records doesn't work for some reason
+				err = st.DS.Insert(&insertTable).
+					Records(&records).
+					Execute()
+			} else {
+				err = st.DS.Insert(&insertTable).
+					Records(&records).
+					Batch(true).
+					BatchSize(len(records)).
+					Execute()
+			}
 			if err != nil {
 				return err
 			}
-			fmt.Println("Proccessed " + fmt.Sprint(i) + " records")
+			fmt.Println("Proccessed " + fmt.Sprint(i+1) + " records")
 			records = []model.Point{}
 		}
-	}
-	// batch upload last
-	err = st.DS.Insert(&insertTable).
-		Records(&records).
-		Batch(true).
-		BatchSize(len(records)).
-		Execute()
-	if err != nil {
-		return err
 	}
 	fmt.Println("Processing finished.")
 	return err
