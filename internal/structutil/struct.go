@@ -31,13 +31,12 @@ func SetField(item interface{}, fieldName string, value interface{}) error {
 		if err != nil {
 			return err
 		}
-		fieldVal.Set(reflect.ValueOf(coercedVal))
+		fieldVal.SetBool(coercedVal)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		coercedVal, err := strconv.ParseInt(value.(string), 0, 64)
 		if err != nil {
 			return err
 		}
-		// fieldVal.SetString(reflect.ValueOf(coercedVal))
 		fieldVal.SetInt(coercedVal)
 	case reflect.Float32, reflect.Float64:
 		coercedVal, err := strconv.ParseFloat(value.(string), 64)
