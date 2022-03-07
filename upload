@@ -1,16 +1,25 @@
 #!/bin/bash
 
-directory="."
+while getopts d:s:c:t: flag
+do
+    case "$flag" in
+        d) directory=${OPTARG};;
+        s) sqlCred=${OPTARG};;
+        c) schema=${OPTARG};;
+        t) table=${OPTARG};;
+    esac
+done
+
 suffix="shp"
-sqlCred="host=host.docker.internal port=25432 user=admin password=notPassword dbname=gis"
 
 uploadShp () {
     list=$(find $directory -type f -name "*.$suffix")
-
     for file in $list
     do
         echo "Uploading $file"
-        ogr2ogr -f "PostgreSQL" PG:"$sqlCred" $file -lco precision=NO
+        # -update avoid creation a new datasource
+        # -append merge matching layers
+        ogr2ogr -append -update -f "PostgreSQL" PG:"$sqlCred" $file -nln $schema.$table
     done
 }
 
