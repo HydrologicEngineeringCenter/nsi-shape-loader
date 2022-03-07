@@ -41,7 +41,7 @@ create table access (
     id uuid not null default gen_random_uuid() primary key,
     access_group text not null,
     role text not null,
-    permission varchar(1) not null
+    permission text not null
 );
 
 create table dataset (
