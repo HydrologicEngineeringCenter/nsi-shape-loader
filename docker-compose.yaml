@@ -22,6 +22,7 @@ services:
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASS=notPassword
+      - TIMESCALEDB_TELEMETRY=off
     ports:
       - 25432:5432
     volumes:

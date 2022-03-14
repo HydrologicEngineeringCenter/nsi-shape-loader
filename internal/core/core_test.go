@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
@@ -19,6 +20,7 @@ func TestCore(t *testing.T) {
 		FilePath:    "/workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp",
 	}
 
-	err := Upload(cfg)
+	output, err := Upload(cfg)
 	assert.Nil(t, err)
+	fmt.Println(output)
 }
