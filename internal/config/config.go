@@ -15,6 +15,7 @@ type Config struct {
 	Dbhost      string
 	Dbport      string
 	FilePath    string
+	FieldMap    string // excel file that maps field to description
 }
 
 func (c *Config) Rdbmsconfig() dq.RdbmsConfig {

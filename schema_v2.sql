@@ -28,7 +28,7 @@ create table nsi_schema (
     id uuid not null default gen_random_uuid() primary key,
     name text not null,
     version text not null,
-    note text
+    notes text
 );
 
 create table quality (
@@ -39,6 +39,7 @@ create table quality (
 
 create table access (
     id uuid not null default gen_random_uuid() primary key,
+    dataset_id uuid not null,
     access_group text not null,
     role text not null,
     permission text not null

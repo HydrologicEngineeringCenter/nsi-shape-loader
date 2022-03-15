@@ -1,11 +1,18 @@
 package core
 
 import (
+	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/model"
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/store"
+	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/types"
+	"github.com/google/uuid"
+	"github.com/jonas-p/go-shp"
 	"github.com/urfave/cli/v2"
+	"github.com/xuri/excelize/v2"
 )
 
 func Core(c *cli.Context) error {
@@ -14,15 +21,11 @@ func Core(c *cli.Context) error {
 	return err
 }
 
-func Upload(cfg config.Config) (string, error) {
+func Upload(cfg config.Config) error {
 	st, err := store.NewStore(cfg)
 	if err != nil {
 		return err
 	}
-
-	// fmt.Println("Reading shapefile from: " + cfg.FilePath)
-	// shpf, err := shp.Open(cfg.FilePath)
-	// defer shpf.Close()
 
 	// fields := shpf.Fields()
 
@@ -69,7 +72,108 @@ func Upload(cfg config.Config) (string, error) {
 	// }
 	// fmt.Println("Processing finished.")
 
-	cmd, err := exec.Command("/bin/bash", "./upload").Output()
+	/////////////////////////////////////////////////////////
+	// Fill out field + domain from included XLS
+	file, err := excelize.OpenFile(cfg.FieldMap)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		// Close the spreadsheet.
+		err = file.Close()
+	}()
 
-	return string(cmd), err
+	var schemaId uuid.UUID
+	schemaName, err := file.GetCellValue("schema", "A2")
+	schemaVersion, err := file.GetCellValue("schema", "B2")
+	schemaNotes, err := file.GetCellValue("schema", "C2")
+
+	schema := model.Schema{
+		Name:    schemaName,
+		Version: schemaVersion,
+		Notes:   schemaNotes,
+	}
+	// Check if schema already exists
+	schemaId, err = st.GetSchemaId(schema)
+	if err != nil {
+		return err
+	}
+	if schemaId == uuid.Nil { // schema do not exists
+		schemaId = st.AddSchema(schema)
+	}
+
+	// rows, err := file.GetRows()
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return "", err
+	// }
+	// for _, row := range rows {
+	// 	for _, colCell := range row {
+	// 		fmt.Print(colCell, "\t")
+	// 	}
+	// 	fmt.Println()
+	// }
+
+	// Populate meta data
+	// fmt.Println("Reading shapefile from: " + cfg.FilePath)
+	// shpf, err := shp.Open(cfg.FilePath)
+	// defer shpf.Close()
+
+	// fields := shpf.Fields()
+	// for j, f := range fields {
+
+	// 	uuidNsiField := uuid.New()
+	// 	uuidDomain := uuid.New()
+
+	// 	shapeType := types.GeometryReverse[shpf.GeometryType]
+
+	// 	nsiField := model.NsiField{
+	// 		Id:          uuidNsiField,
+	// 		Name:        f.String(),
+	// 		Type:        types.NsiFieldReverse[string(f.Fieldtype)],
+	// 		Description: "",
+	// 		IsDomain:    false,
+	// 	}
+
+	// 	domain := model.Domain{
+	// 		Id:         uuidDomain,
+	// 		NsiFieldId: uuidNsiField,
+	// 		Value:      0,
+	// 		Datatype:   "",
+	// 	}
+
+	// 	schemaField := model.SchemaField{
+	// 		Id:         [16]byte{},
+	// 		NsiFieldId: uuidNsiField,
+	// 	}
+
+	// 	schema := model.Schema{
+	// 		Id:      [16]byte{},
+	// 		Name:    schemaName,
+	// 		Version: schemaVersion,
+	// 		Notes:   schemaNotes,
+	// 	}
+	// 	err = st.AddSchema(schema)
+
+	// 	dataset := model.Dataset{
+	// 		Id:          [16]byte{},
+	// 		Name:        "",
+	// 		Version:     "",
+	// 		NsiSchemaId: [16]byte{},
+	// 		TableName:   "",
+	// 		Shape:       types.Shape(shapeType),
+	// 		Description: "",
+	// 		Purpose:     "",
+	// 		DateCreated: time.Time{},
+	// 		CreatedBy:   "",
+	// 		QualityId:   [16]byte{},
+	// 	}
+
+	// }
+
+	// // Upload data
+	// cmd, err := exec.Command("/bin/bash", "./upload").Output()
+
+	// return string(cmd), err
+	return err
 }
