@@ -12,7 +12,6 @@ done
 
 createTable () {
     ogr2ogr -f "PostgreSQL" PG:"$sqlCred" $file -lco precision=no -nln $schema.$table
-    ogr2ogr -f "PostgreSQL" PG:"$sqlCred" $file -lco precision=no -nln $schema.$table
 }
 
 createTable
