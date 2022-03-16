@@ -2,13 +2,14 @@ package core
 
 import (
 	"fmt"
-	"os/exec"
-	"strings"
 
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/files"
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/model"
+	shape "github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/shp"
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/store"
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/types"
+	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/xls"
 	"github.com/google/uuid"
 	"github.com/jonas-p/go-shp"
 	"github.com/urfave/cli/v2"
@@ -16,9 +17,40 @@ import (
 )
 
 func Core(c *cli.Context) error {
+	// 2 modes to core functionalities
+	//  pre - generate config xls from shp
+	//  upload - upload based on data and metadata from xls and shp
 	cfg, err := config.NewConfig(c)
-	err = Upload(cfg)
+	if cfg.Mode == config.Pre {
+		err = PreUpload(cfg)
+	} else {
+		err = Upload(cfg)
+	}
 	return err
+}
+
+// PreUpload generates an xls template from shp file fields
+func PreUpload(cfg config.Config) error {
+
+	// copy xls file
+	const baseXlsSrc = "./assets/baseMetadata.xlsx"
+	const cpXlsDest = "./metadata.xlsx"
+	err := files.Copy(baseXlsSrc, cpXlsDest)
+	if err != nil {
+		return err
+	}
+
+	// populate fields worksheet based on shp fields
+	xls, err := xls.NewXls(cpXlsDest)
+	shpf, err := shape.NewShp(cfg.FilePath)
+	fields := shpf.Fields()
+	for j, f := range fields {
+		err = xls.SetCellValue("fields", "B"+string(j+1), f.String())
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func Upload(cfg config.Config) error {
