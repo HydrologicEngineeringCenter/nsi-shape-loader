@@ -3,22 +3,43 @@ package config
 import (
 	"errors"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/urfave/cli/v2"
 	dq "github.com/usace/goquery"
 )
 
-type Config struct {
-	Dbuser      string
-	Dbpass      string
-	Dbname      string
-	Dbtablename string
-	Dbhost      string
-	Dbport      string
-	FilePath    string
-	FieldMap    string // excel file that maps field to description
+type Mode string
+
+const (
+	Pre    Mode = "P"
+	Upload Mode = "U"
+)
+
+var (
+	ModeReverse = map[string]Mode{
+		"P": Pre,
+		"U": Upload,
+	}
+)
+
+// StoreConfig holds only params required for database connection
+type StoreConfig struct {
+	Dbuser string
+	Dbpass string
+	Dbname string
+	Dbhost string
+	Dbport string
 }
 
-func (c *Config) Rdbmsconfig() dq.RdbmsConfig {
+// Config is for the general app
+type Config struct {
+	FilePath string
+	FieldMap string // excel file that maps field to description
+	Mode
+	StoreConfig
+}
+
+func (c *StoreConfig) Rdbmsconfig() dq.RdbmsConfig {
 	return dq.RdbmsConfig{
 		Dbuser:   c.Dbuser,
 		Dbpass:   c.Dbpass,
@@ -32,16 +53,22 @@ func (c *Config) Rdbmsconfig() dq.RdbmsConfig {
 
 // NewConfig generates new config from cli args context
 func NewConfig(c *cli.Context) (Config, error) {
-	if c.NumFlags() < 5 {
+
+	// Init StoreConfig from env variables
+	var storeCfg StoreConfig
+	if err := envconfig.Process("", &storeCfg); err != nil {
+		return Config{}, err
+	}
+
+	mode := ModeReverse[c.String("mode")]
+	if mode == Upload && c.NumFlags() < 6 {
 		return Config{}, errors.New("newconfig: not enough input flags")
 	}
 	return Config{
-		Dbuser:      c.String("dbuser"),
-		Dbpass:      c.String("dbpass"),
-		Dbhost:      c.String("dbhost"),
-		Dbport:      c.String("dbport"),
-		Dbname:      c.String("dbname"),
+		Mode:        ModeReverse[c.String("mode")],
+		StoreConfig: storeCfg,
 		Dbtablename: c.String("dbtname"),
 		FilePath:    c.String("filepath"),
+		FieldMap:    c.String("xlsconfig"),
 	}, nil
 }
