@@ -1,7 +1,7 @@
-create table nsi_field (
+create table field (
     id uuid not null default gen_random_uuid() primary key,
-    field_name text not null,
-    field_type text not null,
+    name text not null,
+    type text not null,
     description text,
     is_domain boolean not null
 );
