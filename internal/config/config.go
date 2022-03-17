@@ -33,8 +33,8 @@ type StoreConfig struct {
 
 // Config is for the general app
 type Config struct {
-	ShpPath  string
-	FieldMap string // excel file that maps field to description
+	ShpPath string
+	XlsPath string // excel file that maps field to description
 	Mode
 	StoreConfig
 }
@@ -68,6 +68,6 @@ func NewConfig(c *cli.Context) (Config, error) {
 		Mode:        ModeReverse[c.String("mode")],
 		StoreConfig: storeCfg,
 		ShpPath:     c.String("shppath"),
-		FieldMap:    c.String("xlsconfig"),
+		XlsPath:     c.String("xlsmeta"),
 	}, nil
 }

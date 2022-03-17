@@ -22,6 +22,12 @@ func main() {
 				Required: true,
 			},
 			&cli.StringFlag{
+				Name:     "xlsmeta",
+				Aliases:  []string{"x"},
+				Usage:    "",
+				Required: true,
+			},
+			&cli.StringFlag{
 				Name:     "directory",
 				Aliases:  []string{"d"},
 				Usage:    "path to input directory containing shapefiles",
