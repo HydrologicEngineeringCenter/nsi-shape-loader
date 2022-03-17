@@ -44,15 +44,16 @@ func PreUpload(cfg config.Config) error {
 		return err
 	}
 	fields := shpf.Fields()
-	var loc string
+	var loc, val string
 	for j, f := range fields {
 		loc = "B" + fmt.Sprint(j+2)
-		// val = f.String()
-		err = xls.SetCellValue("fields", loc, f.Name)
+		val = f.String()
+		err = xls.SetCellValue("fields", loc, val)
 		if err != nil {
 			return err
 		}
 	}
+	xls.Save()
 	return err
 }
 
