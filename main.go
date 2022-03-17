@@ -16,21 +16,21 @@ func main() {
 		Action: core.Core,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "sql",
+				Name:     "shppath",
 				Aliases:  []string{"s"},
-				Usage:    "sql connection params",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "schematable",
-				Aliases:  []string{"e"},
-				Usage:    "table name in format ie. schema.table",
+				Usage:    "",
 				Required: true,
 			},
 			&cli.StringFlag{
 				Name:     "directory",
 				Aliases:  []string{"d"},
 				Usage:    "path to input directory containing shapefiles",
+				Required: false,
+			},
+			&cli.StringFlag{
+				Name:     "mode",
+				Aliases:  []string{"m"},
+				Usage:    "P/U. P prepares a config excel templates, U uploads data",
 				Required: true,
 			},
 		},
