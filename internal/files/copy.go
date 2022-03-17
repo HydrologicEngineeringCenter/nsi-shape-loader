@@ -1,13 +1,13 @@
 package files
 
-func Copy(source string, dest string) error {
-	input, err := ioutil.ReadFile(sourceFile)
+import "io/ioutil"
+
+func Copy(src string, dest string) error {
+	input, err := ioutil.ReadFile(src)
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(destinationFile, input, 0644)
-	if err != nil {
-		return err
-	}
+	err = ioutil.WriteFile(dest, input, 0644)
+	return err
 }
