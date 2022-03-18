@@ -113,15 +113,33 @@ func (st *PSStore) GetFieldId(f model.Field) (uuid.UUID, error) {
 func (st *PSStore) TableExists(schema string, table string) (bool, error) {
 	var result bool
 	err := st.DS.Select(`
-        SELECT EXISTS (
-            SELECT FROM pg_tables
-            WHERE
-                schemaname='$1' AND
-                tablename='$2'
-        )
+    SELECT EXISTS (
+        SELECT FROM pg_tables
+        WHERE
+            schemaname='$1' AND
+            tablename='$2'
+    )
     `).
 		Params(schema, table).
 		Dest(&result).
 		Fetch()
+	return result, err
+}
+
+func (st *PSStore) SchemaFieldAssociationExists(fieldId uuid.UUID, schemaID uuid.UUID) (bool, error) {
+	var result bool
+	var association []model.SchemaField
+	err := st.DS.Select(`
+    SELECT * FROM schema_field
+    WHERE id=$1 AND field_id=$2
+    `).
+		Params(schema, table).
+		Dest(&association).
+		Fetch()
+	if len(association) > 0 {
+		result = true
+	} else {
+		result = false
+	}
 	return result, err
 }
