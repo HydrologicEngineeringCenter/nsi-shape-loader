@@ -17,11 +17,14 @@ create table domain (
 );
 
 create table schema_field (
-    id uuid not null default gen_random_uuid() primary key,
+    id uuid not null default,
     nsi_field_id uuid not null,
     constraint fk_schema_field_nsi_field
         foreign key(nsi_field_id)
-            references nsi_field(id)
+            references field(id)
+    constraint fk_schema_field_schema
+        foreign key(id)
+            references schema(id)
 );
 
 create table nsi_schema (
