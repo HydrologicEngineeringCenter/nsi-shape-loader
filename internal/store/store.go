@@ -28,22 +28,53 @@ func NewStore(c config.Config) (*PSStore, error) {
 }
 
 func (st *PSStore) AddDomain(schema model.Schema) error {
+	return nil
 }
 
-func (st *PSStore) AddField(schema model.Schema) error {
+func (st *PSStore) AddField(f model.Field) (uuid.UUID, error) {
+	var fId uuid.UUID
+	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
+		err := st.DS.Select().
+			DataSet(&fieldTable).
+			Tx(&tx).
+			StatementKey("insert").
+			Params().
+			Dest(&fId).
+			Fetch()
+		if err != nil {
+			panic(err)
+		}
+	})
+	return fId, err
 }
 
-func (st *PSStore) AddSchema(schema model.Schema) error {
-	return s.DS.Exec(goquery.NoTx, domainTable.Statements["insert"], schema.Name, schema.Version, schema.Notes)
+func (st *PSStore) AddSchema(schema model.Schema) (uuid.UUID, error) {
+	var schemaId uuid.UUID
+	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
+		err := st.DS.Select().
+			DataSet(&domainTable).
+			Tx(&tx).
+			StatementKey("insert").
+			Params(schema.Name, schema.Version, schema.Notes).
+			Dest(&schemaId).
+			Fetch()
+		if err != nil {
+			panic(err)
+		}
+	})
+	return schemaId, err
 }
 
 func (st *PSStore) AddDataset(schema model.Schema) error {
+	return nil
 }
 
 func (st *PSStore) AddAccess(schema model.Schema) error {
+	return nil
 }
 
 func (st *PSStore) AddQuality(schema model.Schema) error {
+	return nil
 }
 
 func (st *PSStore) GetSchemaId(s model.Schema) (uuid.UUID, error) {
@@ -57,7 +88,40 @@ func (st *PSStore) GetSchemaId(s model.Schema) (uuid.UUID, error) {
 		return uuid.UUID{}, nil
 	}
 	if len(ids) > 1 {
-		return uuid.UUID{}, errors.New("more than 1 id exists for schema=" + s.Name + " and version=" + s.Version)
+		return uuid.UUID{}, errors.New("more than 1 id exists for schema.name=" + s.Name + " and schema.version=" + s.Version)
 	}
 	return ids[0], err
+}
+
+func (st *PSStore) GetFieldId(f model.Field) (uuid.UUID, error) {
+	var ids []uuid.UUID
+	err := st.DS.
+		Select(schemaTable.Statements["select"]).
+		Params(f.Name).
+		Dest(&ids).
+		Fetch()
+	if len(ids) == 0 {
+		return uuid.UUID{}, nil
+	}
+	if len(ids) > 1 {
+		return uuid.UUID{}, errors.New("more than 1 id exists for field.name=" + f.Name)
+	}
+	return ids[0], err
+}
+
+// Check if table exists in database
+func (st *PSStore) TableExists(schema string, table string) (bool, error) {
+	var result bool
+	err := st.DS.Select(`
+        SELECT EXISTS (
+            SELECT FROM pg_tables
+            WHERE
+                schemaname='$1' AND
+                tablename='$2'
+        )
+    `).
+		Params(schema, table).
+		Dest(&result).
+		Fetch()
+	return result, err
 }

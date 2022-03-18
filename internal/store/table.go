@@ -20,8 +20,8 @@ var fieldTable = goquery.TableDataSet{
 	Name:   "field",
 	Schema: "nsi",
 	Statements: map[string]string{
-		"select":     `select * from domain where name=$1 and version=$2`,
-		"selectById": `select * from domain where id=$1`,
+		"select":     `select id from field where name=$1`,
+		"selectById": `select * from field where id=$1`,
 		"insert":     `insert into field (name, type, description, is_domain) values ($1, $2, $3, $4) returning id`,
 	},
 	Fields: model.Field{},
