@@ -28,7 +28,8 @@ create table nsi_schema (
     id uuid not null default gen_random_uuid() primary key,
     name text not null,
     version text not null,
-    notes text
+    notes text,
+    unique(name, version)
 );
 
 create table quality (
