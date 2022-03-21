@@ -22,7 +22,7 @@ type Shape string
 // )
 
 var (
-	GeometryReverse = map[shp.ShapeType]Shape{
+	ShapeReverse = map[shp.ShapeType]Shape{
 		shp.NULL:        "NULL",
 		shp.POINT:       "POINT",
 		shp.POLYLINE:    "POLYLINE",
@@ -65,6 +65,14 @@ const (
 	High   Quality = "High"
 	Medium         = "Medium"
 	Low            = "Low"
+)
+
+var (
+	QualityReverse = map[string]Quality{
+		"High":   High,
+		"Medium": Medium,
+		"Low":    Low,
+	}
 )
 
 type Role string
