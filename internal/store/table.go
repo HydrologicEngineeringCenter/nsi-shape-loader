@@ -5,20 +5,23 @@ import (
 	"github.com/usace/goquery"
 )
 
+// TODO maybe this should be a config field
+const dbSchema string = "nsi"
+
 var domainTable = goquery.TableDataSet{
 	Name:   "domain",
-	Schema: "nsi",
+	Schema: dbSchema,
 	Statements: map[string]string{
 		"select":     `select * from domain where name=$1 and version=$2`,
 		"selectById": `select * from domain where id=$1`,
-		"insert":     `insert into domain (name, version, notes) values ($1, $2, $3) returning id`,
+		"insert":     `insert into domain (field_id, value) values ($1, $2) returning id`,
 	},
 	Fields: model.Domain{},
 }
 
 var fieldTable = goquery.TableDataSet{
 	Name:   "field",
-	Schema: "nsi",
+	Schema: dbSchema,
 	Statements: map[string]string{
 		"select":     `select id from field where name=$1`,
 		"selectById": `select * from field where id=$1`,
@@ -27,9 +30,19 @@ var fieldTable = goquery.TableDataSet{
 	Fields: model.Field{},
 }
 
+var schemaFieldTable = goquery.TableDataSet{
+	Name:   "schema_field",
+	Schema: dbSchema,
+	Statements: map[string]string{
+		"select": `select id from schema_field`,
+		"insert": `insert into schemafield (id, field_id) values ($1, $2) returning id`,
+	},
+	Fields: model.Field{},
+}
+
 var schemaTable = goquery.TableDataSet{
 	Name:   "schema",
-	Schema: "nsi",
+	Schema: dbSchema,
 	Statements: map[string]string{
 		"select":     `select * from domain where name=$1 and version=$2`,
 		"selectId":   `select id from domain where name=$1 and version=$2`,
@@ -41,11 +54,33 @@ var schemaTable = goquery.TableDataSet{
 
 var datasetTable = goquery.TableDataSet{
 	Name:   "dataset",
-	Schema: "nsi",
+	Schema: dbSchema,
 	Statements: map[string]string{
 		"select":     `select * from domain where name=$1 and version=$2`,
 		"selectById": `select * from domain where id=$1`,
+		"insert": `insert into field (
+            name,
+            version,
+            nsi_schema_id,
+            table_name,
+            shape,
+            description,
+            purpose,
+            created_by,
+            quality_id,
+        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
+	},
+	Fields: model.Dataset{},
+}
+
+var qualityTable = goquery.TableDataSet{
+	Name:   "quality",
+	Schema: dbSchema,
+	Statements: map[string]string{
+		"select":     `select * from domain where name=$1 and version=$2`,
+		"selectId":   `select id from domain where name=$1 and version=$2`,
+		"selectById": `select * from domain where id=$1`,
 		"insert":     `insert into field (name, version, notes) values ($1, $2, $3) returning id`,
 	},
-	Fields: model.Schema{},
+	Fields: model.Quality{},
 }
