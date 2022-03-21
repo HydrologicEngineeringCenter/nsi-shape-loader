@@ -2,23 +2,27 @@ package types
 
 import "github.com/jonas-p/go-shp"
 
-type DataFields map[string]string
-
-type Data string
-
-const (
-	Integer Data = "Integer"
-)
-
 type Shape string
 
-const (
-	Point   Shape = "Point"
-	Polygon Shape = "Polygon"
-)
+// const (
+// 		shp.NULL Shape =        "NULL"
+// 		shp.POINT =       "POINT"
+// 		shp.POLYLINE =    "POLYLINE"
+// 		shp.POLYGON =     "POLYGON"
+// 		shp.MULTIPOINT =  "MULTIPOINT"
+// 		shp.POINTZ =      "POINTZ"
+// 		shp.POLYLINEZ =   "POLYLINEZ"
+// 		shp.POLYGONZ =    "POLYGONZ"
+// 		shp.MULTIPOINTZ = "MULTIPOINTZ"
+// 		shp.POINTM =      "POINTM"
+// 		shp.POLYLINEM =   "POLYLINEM"
+// 		shp.POLYGONM =    "POLYGONM"
+// 		shp.MULTIPOINTM = "MULTIPOINTM"
+// 		shp.MULTIPATCH =  "MULTIPATCH"
+// )
 
 var (
-	GeometryReverse = map[shp.ShapeType]string{
+	GeometryReverse = map[shp.ShapeType]Shape{
 		shp.NULL:        "NULL",
 		shp.POINT:       "POINT",
 		shp.POLYLINE:    "POLYLINE",
@@ -36,19 +40,19 @@ var (
 	}
 )
 
-type NsiField string
+type Datatype string
 
-// Field type uses mapping from go-shape
+// Field type uses mapping from go-shp
 const (
-	String NsiField = "C"
-	Number NsiField = "N"
-	Float  NsiField = "F"
-	Date   NsiField = "D"
+	Char   Datatype = "C"
+	Number          = "N"
+	Float           = "F"
+	Date            = "D"
 )
 
 var (
-	NsiFieldReverse = map[string]NsiField{
-		"C": String,
+	DatatypeReverse = map[string]Datatype{
+		"C": Char,
 		"N": Number,
 		"F": Float,
 		"D": Date,
@@ -58,19 +62,27 @@ var (
 type Quality string
 
 const (
-	High Quality = "High"
+	High   Quality = "High"
+	Medium         = "Medium"
+	Low            = "Low"
 )
 
 type Role string
 
 const (
 	Admin Role = "Admin"
+	Owner      = "Owner"
+	User       = "User"
 )
 
 type Permission string
 
 const (
-	Upload Permission = "Upload"
+	Read   Permission = "Read"
+	Add               = "Add"
+	Edit              = "Edit"
+	Delete            = "Delete"
+	All               = "All"
 )
 
 // FROM go-shp

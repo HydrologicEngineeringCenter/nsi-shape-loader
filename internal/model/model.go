@@ -67,19 +67,18 @@ type Point struct {
 //      Quality - Quality of dataset
 //      Schema - Grouping of unified format across multiple datasets
 //          Field - Data field tied to each dataset
-//          Domain - Set of possible values for each field
+//          Domain - Set of possible values if the field is discrete categorical
 
 type Domain struct {
-	Id       uuid.UUID  `db:"id"`
-	FieldId  uuid.UUID  `db:"field_id"`
-	Value    int        `db:"domain_value"`
-	Datatype types.Data `db:"data_type"`
+	Id      uuid.UUID `db:"id"`
+	FieldId uuid.UUID `db:"field_id"`
+	Value   string    `db:"value"`
 }
 
 type Field struct {
 	Id          uuid.UUID      `db:"id"`
-	Name        string         `db:"field_name"`
-	Type        types.NsiField `db:"field_type"`
+	Name        string         `db:"name"`
+	Type        types.Datatype `db:"type"`
 	Description string         `db:"description"`
 	IsDomain    bool           `db:"is_domain"`
 }
