@@ -11,7 +11,6 @@ create table domain (
     id uuid not null default gen_random_uuid() primary key,
     field_id uuid not null,
     value text not null,
-    data_type text not null,
     constraint fk_domain_field
         foreign key(field_id)
             references field(id)
