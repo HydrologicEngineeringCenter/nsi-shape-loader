@@ -8,7 +8,7 @@ func StrContains(sl []string, s string) bool {
 	return i < len(sl) && sl[i] == s
 }
 
-// StrContains checks whether an int slice contains a specific int value
+// IntContains checks whether an int slice contains a specific int value
 func IntContains(s []int, e int) bool {
 	for _, a := range s {
 		if a == e {
