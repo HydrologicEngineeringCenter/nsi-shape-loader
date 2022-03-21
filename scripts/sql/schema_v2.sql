@@ -10,7 +10,7 @@ create table field (
 create table domain (
     id uuid not null default gen_random_uuid() primary key,
     field_id uuid not null,
-    domain_value text not null,
+    value text not null,
     data_type text not null,
     constraint fk_domain_field
         foreign key(field_id)
@@ -70,5 +70,6 @@ create table dataset (
             references nsi_schema(id),
     constraint fk_dataset_quality
         foreign key(quality_id)
-            references quality(id)
+            references quality(id),
+    unique(name, version, quality)
 );

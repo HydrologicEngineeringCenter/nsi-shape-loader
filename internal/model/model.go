@@ -70,10 +70,10 @@ type Point struct {
 //          Domain - Set of possible values for each field
 
 type Domain struct {
-	Id         uuid.UUID  `db:"id"`
-	NsiFieldId uuid.UUID  `db:"nsi_field_id"`
-	Value      int        `db:"domain_value"`
-	Datatype   types.Data `db:"data_type"`
+	Id       uuid.UUID  `db:"id"`
+	FieldId  uuid.UUID  `db:"field_id"`
+	Value    int        `db:"domain_value"`
+	Datatype types.Data `db:"data_type"`
 }
 
 type Field struct {
