@@ -38,7 +38,8 @@ create table nsi_schema (
 create table quality (
     id uuid not null default gen_random_uuid() primary key,
     value text not null,
-    description text
+    description text,
+    unique(value)
 );
 
 create table access (
@@ -70,5 +71,5 @@ create table dataset (
     constraint fk_dataset_quality
         foreign key(quality_id)
             references quality(id),
-    unique(name, version, quality)
+    unique(name, version, shape, purpose, quality)
 );
