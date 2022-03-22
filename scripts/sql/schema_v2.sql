@@ -39,7 +39,9 @@ create table quality (
     id uuid not null default gen_random_uuid() primary key,
     value text not null,
     description text,
-    unique(value)
+    unique(value),
+    constraint chk_quality_value
+        check (value in ('high', 'med', 'low'))
 );
 
 create table access (
@@ -50,7 +52,10 @@ create table access (
     permission text not null,
     constraint fk_access_dataset
         foreign key(dataset_id)
-            references dataset(id)
+            references dataset(id),
+    constraint chk_access_role
+        check (role in ('admin', 'user', 'owner')),
+    unique(dataset_id, access_group)
 );
 
 create table dataset (
@@ -73,3 +78,12 @@ create table dataset (
             references quality(id),
     unique(name, version, shape, purpose, quality)
 );
+
+INSERT INTO quality (value, description)
+VALUES ('high', '');
+
+INSERT INTO quality (value, description)
+VALUES ('medium', '');
+
+INSERT INTO quality (value, description)
+VALUES ('low', '');
