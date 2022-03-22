@@ -113,7 +113,7 @@ type Dataset struct {
 	Id          uuid.UUID   `db:"id"`
 	Name        string      `db:"name"`
 	Version     string      `db:"version"`
-	NsiSchemaId uuid.UUID   `db:"nsi_schema_id"`
+	SchemaId    uuid.UUID   `db:"nsi_schema_id"`
 	TableName   string      `db:"table_name"`
 	Shape       types.Shape `db:"shape"`
 	Description string      `db:"description"`

@@ -12,9 +12,8 @@ var domainTable = goquery.TableDataSet{
 	Name:   "domain",
 	Schema: dbSchema,
 	Statements: map[string]string{
-		"select":     `select * from domain where name=$1 and version=$2`,
-		"selectById": `select * from domain where id=$1`,
-		"insert":     `insert into domain (field_id, value) values ($1, $2) returning id`,
+		"selectId": `select id from domain where field_id=$1 and value=$2`,
+		"insert":   `insert into domain (field_id, value) values ($1, $2) returning id`,
 	},
 	Fields: model.Domain{},
 }
@@ -77,10 +76,8 @@ var qualityTable = goquery.TableDataSet{
 	Name:   "quality",
 	Schema: dbSchema,
 	Statements: map[string]string{
-		"select":     `select * from domain where name=$1 and version=$2`,
-		"selectId":   `select id from domain where name=$1 and version=$2`,
-		"selectById": `select * from domain where id=$1`,
-		"insert":     `insert into field (name, version, notes) values ($1, $2, $3) returning id`,
+		"selectId": `select id from quality where value=$1`,
+		"insert":   `insert into quality (value, description) values ($1, $2) returning id`,
 	},
 	Fields: model.Quality{},
 }
