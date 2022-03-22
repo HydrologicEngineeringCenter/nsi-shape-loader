@@ -10,34 +10,56 @@ import (
 
 // main entry point into app containing an args parser wrapper
 func main() {
+
 	app := &cli.App{
 		Name:   "nsi-loader",
 		Usage:  "upload nsi shapefile to postgis database",
 		Action: core.Core,
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:     "shppath",
-				Aliases:  []string{"s"},
-				Usage:    "",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "xlsmeta",
-				Aliases:  []string{"x"},
-				Usage:    "",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "directory",
-				Aliases:  []string{"d"},
-				Usage:    "path to input directory containing shapefiles",
-				Required: false,
-			},
+
 			&cli.StringFlag{
 				Name:     "mode",
 				Aliases:  []string{"m"},
-				Usage:    "P/U. P prepares a config excel templates, U uploads data",
+				Usage:    "prep/upload/access. 'prep' prepares a config excel templates, 'upload' uploads data, 'access' changes access group and role",
 				Required: true,
+			},
+
+			// xlsPath flag required for both Prep and Upload modes
+			&cli.PathFlag{
+				Name:    "xlsPath",
+				Aliases: []string{"x"},
+				Usage:   "",
+			},
+			// Upload
+			&cli.PathFlag{
+				Name:    "shpPath",
+				Aliases: []string{"s"},
+				Usage:   "",
+			},
+
+			// consider adding this flag for uploading multiple files
+			// &cli.StringFlag{
+			// 	Name:     "directory",
+			// 	Aliases:  []string{"d"},
+			// 	Usage:    "path to input directory containing shapefiles",
+			// 	Required: false,
+			// },
+
+			// access mode
+			&cli.PathFlag{
+				Name:    "datasetId",
+				Aliases: []string{"i"},
+				Usage:   "",
+			},
+			&cli.PathFlag{
+				Name:    "group",
+				Aliases: []string{"i"},
+				Usage:   "",
+			},
+			&cli.PathFlag{
+				Name:    "role",
+				Aliases: []string{"i"},
+				Usage:   "",
 			},
 		},
 	}
