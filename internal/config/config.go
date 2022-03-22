@@ -11,8 +11,10 @@ import (
 type Mode string
 
 const (
-	Pre    Mode = "P"
-	Upload Mode = "U"
+	Pre     Mode = "P"
+	Upload       = "U"
+	Access       = "A"
+	Quality      = "Q"
 )
 
 var (
