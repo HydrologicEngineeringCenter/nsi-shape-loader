@@ -126,15 +126,15 @@ var (
 type Mode string
 
 const (
-	Prep   Mode = "P"
-	Upload      = "U"
-	Access      = "A"
+	Prep   Mode = "prep"
+	Upload      = "upload"
+	Access      = "access"
 )
 
 var (
 	ModeReverse = map[string]Mode{
-		"P": Prep,
-		"U": Upload,
-		"A": Access,
+		"prep":   Prep,
+		"upload": Upload,
+		"access": Access,
 	}
 )
