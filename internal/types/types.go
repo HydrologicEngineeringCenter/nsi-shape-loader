@@ -78,20 +78,28 @@ var (
 type Role string
 
 const (
-	Admin Role = "Admin"
-	Owner      = "Owner"
-	User       = "User"
+	Admin Role = "admin"
+	Owner      = "owner"
+	User       = "user"
 )
 
-type Permission string
-
-const (
-	Read   Permission = "Read"
-	Add               = "Add"
-	Edit              = "Edit"
-	Delete            = "Delete"
-	All               = "All"
+var (
+	RolePermission = map[Role]string{
+		Admin: "read add delete update",
+		Owner: "read add update",
+		User:  "read",
+	}
 )
+
+// type Permission string
+
+// const (
+// 	Read   Permission = "Read"
+// 	Add               = "Add"
+// 	Edit              = "Edit"
+// 	Delete            = "Delete"
+// 	All               = "All"
+// )
 
 // FROM go-shp
 // //  is a identifier for the the type of shapes.
@@ -114,3 +122,19 @@ const (
 // 	MULTIPOINTM  = 28
 // 	MULTIPATCH   = 31
 // )
+
+type Mode string
+
+const (
+	Prep   Mode = "P"
+	Upload      = "U"
+	Access      = "A"
+)
+
+var (
+	ModeReverse = map[string]Mode{
+		"P": Prep,
+		"U": Upload,
+		"A": Access,
+	}
+)

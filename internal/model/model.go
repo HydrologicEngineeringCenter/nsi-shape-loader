@@ -102,11 +102,11 @@ type Quality struct {
 }
 
 type Access struct {
-	Id         uuid.UUID        `db:"id"`
-	DatasetId  uuid.UUID        `db:"dataset_id"`
-	Group      string           `db:"access_group"`
-	Role       types.Role       `db:"role"`
-	Permission types.Permission `db:"permission"`
+	Id         uuid.UUID  `db:"id"`
+	DatasetId  uuid.UUID  `db:"dataset_id"`
+	Group      string     `db:"access_group"`
+	Role       types.Role `db:"role"`
+	Permission string     `db:"permission"`
 }
 
 type Dataset struct {

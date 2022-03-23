@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"os/exec"
 	"strconv"
 
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
@@ -21,35 +22,23 @@ func Core(c *cli.Context) error {
 	//  upload - upload based on data and metadata from xls and shp
 	cfg, err := config.NewConfig(c)
 
-	////////////////////////////////////////
-	//  OWNER
-
-	// Pre mode generates the metadata xls required by Upload
-	if cfg.Mode == config.Pre {
-		err = PreUpload(cfg)
+	// Prep mode generates the metadata xls required by Upload
+	if cfg.Mode == types.Prep {
+		err = Prep(cfg)
 	}
 	// Upload mode uploads the dataset and associated metadata
-	if cfg.Mode == config.Upload {
+	if cfg.Mode == types.Upload {
 		err = Upload(cfg)
 	}
-
-	////////////////////////////////////////
-	//  ADMIN
-
-	// Access mode modifies group access to the dataset
-	if cfg.Mode == config.Access {
-		err = ModAccess(cfg)
+	// Access mode change access permission of groups
+	if cfg.Mode == types.Access {
+		err = ChangeAccess(cfg)
 	}
-	// Quality mode add
-	if cfg.Mode == config.Quality {
-		err = AddQuality(cfg)
-	}
-
 	return err
 }
 
 // PreUpload generates an xls template from shp file fields
-func PreUpload(cfg config.Config) error {
+func Prep(cfg config.Config) error {
 
 	// copy xls file
 	const baseXlsSrc = "./assets/baseMetadata.xlsx"
@@ -285,11 +274,12 @@ func Upload(cfg config.Config) error {
 		qualityId, err = st.AddQuality(quality)
 	}
 
+	tableName := "inventory_" + uuid.New().String()
 	dataset := model.Dataset{
 		Name:        datasetName,
 		Version:     datasetVersion,
 		SchemaId:    schemaId,
-		TableName:   "",
+		TableName:   tableName,
 		Shape:       types.ShapeReverse[shpf.GeometryType],
 		Description: datasetDescription,
 		Purpose:     datasetPurpose,
@@ -299,17 +289,32 @@ func Upload(cfg config.Config) error {
 
 	_, err = st.AddDataset(dataset)
 
-	// // Upload data
-	// _, err = exec.Command("/bin/bash", "./upload", "-d", "-s", "-c", "-t").Output()
+	// Upload data
+	_, err = exec.Command("/bin/bash", "./upload", "-d", "-s", "-c", "-t").Output()
 
 	// return string(cmd), err
 	return err
 }
 
-func ModAccess(cfg config.Config) error {
-	return nil
-}
+func ChangeAccess(cfg config.Config) error {
+	st, err := store.NewStore(cfg)
+	////////////////////////////////////////
+	//  ACCESS
 
-func AddQuality(cfg config.Config) error {
-	return nil
+	var accessId uuid.UUID
+	access := model.Access{
+		DatasetId:  cfg.AccessConfig.DatasetId,
+		Group:      cfg.AccessConfig.Group,
+		Role:       cfg.AccessConfig.Role,
+		Permission: types.RolePermission[cfg.AccessConfig.Role],
+	}
+	accessId, err = st.GetAccessId(access)
+	if err != nil {
+		return err
+	}
+	if accessId == uuid.Nil {
+		_, err = st.AddAccess(access)
+	}
+
+	return err
 }

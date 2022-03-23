@@ -130,8 +130,21 @@ func (st *PSStore) AddDataset(d model.Dataset) (uuid.UUID, error) {
 	return ids[0], err
 }
 
-func (st *PSStore) AddAccess(schema model.Schema) error {
-	return nil
+func (st *PSStore) AddAccess(a model.Access) (uuid.UUID, error) {
+	var id uuid.UUID
+	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
+		err := st.DS.Select().
+			DataSet(&accessTable).
+			Tx(&tx).
+			StatementKey("insert").
+			Params(a.DatasetId, a.Group, a.Role, a.Permission).
+			Dest(&id).
+			Fetch()
+		if err != nil {
+			panic(err)
+		}
+	})
+	return id, err
 }
 
 func (st *PSStore) AddQuality(q model.Quality) (uuid.UUID, error) {
@@ -163,6 +176,22 @@ func (st *PSStore) GetDomainId(d model.Domain) (uuid.UUID, error) {
 	}
 	if len(ids) > 1 {
 		return uuid.UUID{}, errors.New("more than 1 id exists for domain.field_id=" + d.FieldId.String() + ", domain.value=" + d.Value)
+	}
+	return ids[0], err
+}
+
+func (st *PSStore) GetAccessId(a model.Access) (uuid.UUID, error) {
+	var ids []uuid.UUID
+	err := st.DS.
+		Select(schemaTable.Statements["selectId"]).
+		Params(a.DatasetId, a.Group).
+		Dest(&ids).
+		Fetch()
+	if len(ids) == 0 {
+		return uuid.UUID{}, nil
+	}
+	if len(ids) > 1 {
+		return uuid.UUID{}, errors.New("more than 1 id exists for access.dataset_id=" + a.DatasetId.String() + " and access.access_group=" + a.Group)
 	}
 	return ids[0], err
 }

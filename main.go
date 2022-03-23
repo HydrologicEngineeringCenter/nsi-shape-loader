@@ -60,12 +60,12 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:    "group",
-				Aliases: []string{"i"},
+				Aliases: []string{"g"},
 				Usage:   "",
 			},
 			&cli.StringFlag{
 				Name:    "role",
-				Aliases: []string{"i"},
+				Aliases: []string{"r"},
 				Usage:   "",
 			},
 		},
