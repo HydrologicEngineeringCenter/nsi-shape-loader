@@ -45,18 +45,25 @@ func main() {
 			// 	Required: false,
 			// },
 
+			// db access info
+			&cli.StringFlag{
+				Name:    "sqlConn",
+				Aliases: []string{"q"},
+				Usage:   "",
+			},
+
 			// access mode
-			&cli.PathFlag{
+			&cli.StringFlag{
 				Name:    "datasetId",
 				Aliases: []string{"i"},
 				Usage:   "",
 			},
-			&cli.PathFlag{
+			&cli.StringFlag{
 				Name:    "group",
 				Aliases: []string{"i"},
 				Usage:   "",
 			},
-			&cli.PathFlag{
+			&cli.StringFlag{
 				Name:    "role",
 				Aliases: []string{"i"},
 				Usage:   "",
