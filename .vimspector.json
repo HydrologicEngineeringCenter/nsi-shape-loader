@@ -1,6 +1,31 @@
 {
+  "adapters": {
+    "docker-dlv": {
+      "command": [
+        "node",
+        "${gadgetDir}/vscode-go/dist/debugAdapter.js"
+      ],
+      "launch": {
+        "remote": {
+          "container": "SHAPELOADER_DEV",
+          "runCommand": [
+            "dlv",
+            "debug",
+            "--listen=0.0.0.0:2345",
+            "--api-version=2",
+            "--log",
+            "--log-output=dap",
+            "--headless",
+            "--",
+            "%CMD%"
+          ]
+        },
+        "delay": "1000m"
+      }
+    }
+  },
   "configurations": {
-    "go-dlv": {
+    "TEST DON'T USE": {
       "adapter": "delve",
       "configuration": {
         "request": "launch",
@@ -33,6 +58,36 @@
         ],
         "mode": "debug",
         "dlvToolPath": "~/go/bin/dlv"
+      }
+    },
+    "remoteConnect": {
+      "adapter": "vscode-go",
+      "configuration": {
+        "request": "attach",
+        "mode": "remote",
+        "remotePath": "/workspaces/shape-sql-loader",
+        "cwd": "${workspaceRoot}",
+        "host": "host.docker.internal",
+        "port": 2345
+      }
+    },
+    "remoteLaunch-prep": {
+      "adapter": "docker-dlv",
+      "type": "go",
+      "remote-request": "launch",
+      "remote-cmdLine": [
+        "--mode",
+        "prep",
+        "--shpPath",
+        "/workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp"
+      ],
+      "configuration": {
+        "request": "attach",
+        "mode": "remote",
+        "remotePath": "/workspaces/shape-sql-loader",
+        "cwd": "${workspaceRoot}",
+        "host": "host.docker.internal",
+        "port": 2345
       }
     }
   }
