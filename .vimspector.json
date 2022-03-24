@@ -1,0 +1,39 @@
+{
+  "configurations": {
+    "go-dlv": {
+      "adapter": "delve",
+      "configuration": {
+        "request": "launch",
+        "program": "${Executable}",
+        "args": [
+          "*${Args}"
+        ],
+        "sourceLanguages": [
+          "go"
+        ]
+      },
+      "breakpoints": {
+        "exception": {
+          "cpp_throw": "Y",
+          "cpp_ctach": "N"
+        }
+      }
+    },
+    "localLaunch-prep": {
+      "adapter": "vscode-go",
+      "type": "go",
+      "configuration": {
+        "request": "launch",
+        "program": "${fileDirname}",
+        "args": [
+          "--mode",
+          "prep",
+          "--shpPath",
+          "~/dev/nsi/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp"
+        ],
+        "mode": "debug",
+        "dlvToolPath": "~/go/bin/dlv"
+      }
+    }
+  }
+}
