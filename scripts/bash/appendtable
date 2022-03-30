@@ -1,0 +1,20 @@
+#!/bin/bash
+
+while getopts d:s:c:t: flag
+do
+    case "$flag" in
+        s) sqlCred=${OPTARG};;
+        c) schema=${OPTARG};;
+        t) table=${OPTARG};;
+    esac
+done
+
+
+uploadShp () {
+    echo "Uploading $file"
+    # -update avoid creation a new datasource
+    # -append merge matching layers
+    ogr2ogr -append -update -progress -f "PostgreSQL" PG:"$sqlCred" $file -nln $schema.$table
+}
+
+uploadShp

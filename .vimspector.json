@@ -19,7 +19,7 @@
             "%CMD%"
           ]
         },
-        "delay": "1000m"
+        "delay": "500m"
       }
     }
   },
@@ -101,9 +101,9 @@
         "--shpPath",
         "/workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp",
         "--xlsPath",
-        "/workspaces/shape-sql-loader/metadata.xls",
+        "/workspaces/shape-sql-loader/metadatatest.xlsx",
         "--sqlConn",
-        "host=host.docker.internal port=25432 user=admin password=notPassword dbname=gis"
+        "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
       ],
       "configuration": {
         "request": "attach",
@@ -127,7 +127,7 @@
         "--role",
         "admin",
         "--sqlConn",
-        "host=host.docker.internal port=25432 user=admin password=notPassword dbname=gis"
+        "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
       ],
       "configuration": {
         "request": "attach",

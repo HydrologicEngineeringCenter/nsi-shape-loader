@@ -3,13 +3,13 @@
 while getopts e:s:c:t: flag
 do
     case "$flag" in
-        e) template=${OPTARG};;
         s) sqlCred=${OPTARG};;
         c) schema=${OPTARG};;
         t) table=${OPTARG};;
     esac
 done
 
+# create new table from scratch
 createTable () {
     ogr2ogr -f "PostgreSQL" PG:"$sqlCred" $file -lco precision=no -nln $schema.$table
 }

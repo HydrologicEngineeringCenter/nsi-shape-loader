@@ -52,7 +52,7 @@ func (st *PSStore) AddField(f model.Field) (uuid.UUID, error) {
 			DataSet(&fieldTable).
 			Tx(&tx).
 			StatementKey("insert").
-			Params().
+			Params(f.Name, f.Type, f.Description, f.IsDomain).
 			Dest(&fId).
 			Fetch()
 		if err != nil {
@@ -82,7 +82,7 @@ func (st *PSStore) AddSchema(schema model.Schema) (uuid.UUID, error) {
 	var schemaId uuid.UUID
 	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
 		err := st.DS.Select().
-			DataSet(&domainTable).
+			DataSet(&schemaTable).
 			Tx(&tx).
 			StatementKey("insert").
 			Params(schema.Name, schema.Version, schema.Notes).
@@ -196,10 +196,39 @@ func (st *PSStore) GetAccessId(a model.Access) (uuid.UUID, error) {
 	return ids[0], err
 }
 
+func (st *PSStore) GetDatasetId(d model.Dataset) (uuid.UUID, error) {
+	var ids []uuid.UUID
+	err := st.DS.
+		Select(datasetTable.Statements["select"]).
+		Params(d.Name, d.Version, d.Shape, d.Purpose, d.QualityId).
+		Dest(&ids).
+		Fetch()
+	if len(ids) == 0 {
+		return uuid.UUID{}, nil
+	}
+	if len(ids) > 1 {
+		return uuid.UUID{}, errors.New(fmt.Sprintf(`more than 1 id exists for
+        dataset.name=%s
+        dataset.version=%s
+        dataset.shape=%s
+        dataset.purpose=%s
+        dataset.quality_id=%s`,
+			d.Name,
+			d.Version,
+			d.Shape,
+			d.Purpose,
+			d.QualityId,
+		))
+	}
+	return ids[0], err
+}
+
 func (st *PSStore) GetFieldId(f model.Field) (uuid.UUID, error) {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(schemaTable.Statements["select"]).
+		Select().
+		DataSet(&fieldTable).
+		StatementKey("select").
 		Params(f.Name).
 		Dest(&ids).
 		Fetch()
@@ -261,17 +290,18 @@ func (st *PSStore) TableExists(schema string, table string) (bool, error) {
 	return result, err
 }
 
-func (st *PSStore) SchemaFieldAssociationExists(fieldId uuid.UUID, schemaID uuid.UUID) (bool, error) {
+func (st *PSStore) SchemaFieldAssociationExists(schemaID uuid.UUID, fieldId uuid.UUID) (bool, error) {
+	var ids []uuid.UUID
 	var result bool
-	var association []model.SchemaField
-	err := st.DS.Select(`
-    SELECT * FROM schema_field
-    WHERE id=$1 AND field_id=$2
-    `).
+	err := st.DS.
+		Select(qualityTable.Statements["select"]).
 		Params(schemaID, fieldId).
-		Dest(&association).
+		Dest(&ids).
 		Fetch()
-	if len(association) > 0 {
+	if err != nil {
+		return false, err
+	}
+	if len(ids) > 0 {
 		result = true
 	} else {
 		result = false

@@ -26,10 +26,8 @@ import (
 // 	fmt.Println(output)
 // }
 
-func TestPreUpload(t *testing.T) {
+func TestPrep(t *testing.T) {
 	cfg := config.Config{
-		ShpPath:     "test/nsi/NSI_V2_Archives/V2022/15001.shp",
-		FieldMap:    "",
 		Mode:        "P",
 		StoreConfig: config.StoreConfig{},
 	}
@@ -42,6 +40,6 @@ func TestPreUpload(t *testing.T) {
 	path, err = os.Getwd()
 	assert.Nil(t, err)
 	fmt.Println("pwd: " + path)
-	err = PreUpload(cfg)
+	err = Prep(cfg)
 	assert.Nil(t, err)
 }

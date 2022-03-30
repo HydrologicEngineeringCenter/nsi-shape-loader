@@ -2,7 +2,9 @@ package core
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
@@ -21,6 +23,9 @@ func Core(c *cli.Context) error {
 	//  pre - generate config xls from shp
 	//  upload - upload based on data and metadata from xls and shp
 	cfg, err := config.NewConfig(c)
+	if err != nil {
+		panic(err)
+	}
 
 	// Prep mode generates the metadata xls required by Upload
 	if cfg.Mode == types.Prep {
@@ -61,12 +66,14 @@ func Prep(cfg config.Config) error {
 	for j, f := range fields {
 		loc = "B" + fmt.Sprint(j+2)
 		val = f.String()
-		err = xlsF.SetCellValue("fields", loc, val)
+		err = xlsF.SetCellValue("field-domain", loc, val)
 		if err != nil {
 			return err
 		}
 	}
 	xlsF.Save()
+	wd, err := os.Getwd()
+	fmt.Println("Metadata template file successfully created at:", filepath.Join(wd, cpXlsDest))
 	return err
 }
 
@@ -147,17 +154,13 @@ func Upload(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		// Close the spreadsheet.
-		err = xlsF.Close()
-	}()
 
 	/////////////////////////////////////////////////
 	//  SCHEMA
 	var schemaId uuid.UUID
-	schemaName, err := xlsF.GetCellValue("schema", "A2")
-	schemaVersion, err := xlsF.GetCellValue("schema", "B2")
-	schemaNotes, err := xlsF.GetCellValue("schema", "C2")
+	schemaName, err := xlsF.GetCellValue("schema", "C1")
+	schemaVersion, err := xlsF.GetCellValue("schema", "C2")
+	schemaNotes, err := xlsF.GetCellValue("schema", "C3")
 
 	schema := model.Schema{
 		Name:    schemaName,
@@ -170,6 +173,9 @@ func Upload(cfg config.Config) error {
 	}
 	if schemaId == uuid.Nil {
 		schemaId, err = st.AddSchema(schema)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// init data from shp file
@@ -186,11 +192,11 @@ func Upload(cfg config.Config) error {
 		///////////////////////////////
 		//   FIELD
 		var fieldId uuid.UUID
-		fieldDescription, err := xlsF.GetCellValue("fields", "E"+fmt.Sprint(j+2))
+		fieldDescription, err := xlsF.GetCellValue("field-domain", "D"+fmt.Sprint(j+2))
 		if err != nil {
 			return err
 		}
-		sIsDomain, err := xlsF.GetCellValue("fields", "B"+fmt.Sprint(j+2))
+		sIsDomain, err := xlsF.GetCellValue("field-domain", "C"+fmt.Sprint(j+2))
 		if err != nil {
 			return err
 		}
@@ -210,18 +216,8 @@ func Upload(cfg config.Config) error {
 		}
 		if fieldId == uuid.Nil {
 			fieldId, err = st.AddField(field)
-
-			///////////////////////////////
-			//   SCHEMA_FIELD ASSOCIATION
-			flagAssociation, err := st.SchemaFieldAssociationExists(schemaId, fieldId)
 			if err != nil {
-				return err
-			}
-			if !flagAssociation {
-				_, err = st.AddSchemaFieldAssociation(schemaId, fieldId)
-				if err != nil {
-					return err
-				}
+				panic(err)
 			}
 
 			///////////////////////////////
@@ -247,16 +243,43 @@ func Upload(cfg config.Config) error {
 				}
 			}
 		}
+		///////////////////////////////
+		//   SCHEMA_FIELD ASSOCIATION
+		flagAssociation, err := st.SchemaFieldAssociationExists(schemaId, fieldId)
+		if err != nil {
+			return err
+		}
+		if !flagAssociation {
+			_, err = st.AddSchemaFieldAssociation(schemaId, fieldId)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	////////////////////////////////////////
 	//  DATASET
 
 	datasetName, err := xlsF.GetCellValue("dataset", "C1")
+	if err != nil {
+		return err
+	}
 	datasetVersion, err := xlsF.GetCellValue("dataset", "C2")
+	if err != nil {
+		return err
+	}
 	datasetDescription, err := xlsF.GetCellValue("dataset", "C3")
+	if err != nil {
+		return err
+	}
 	datasetPurpose, err := xlsF.GetCellValue("dataset", "C4")
+	if err != nil {
+		return err
+	}
 	datasetCreatedBy, err := xlsF.GetCellValue("dataset", "C5")
+	if err != nil {
+		return err
+	}
 	sDatasetQuality, err := xlsF.GetCellValue("dataset", "C6")
 	if err != nil {
 		return err
@@ -286,11 +309,19 @@ func Upload(cfg config.Config) error {
 		CreatedBy:   datasetCreatedBy,
 		QualityId:   qualityId,
 	}
-
-	_, err = st.AddDataset(dataset)
-
-	// Upload data
-	_, err = exec.Command("/bin/bash", "./upload", "-d", "-s", "-c", "-t").Output()
+	datasetId, err := st.GetDatasetId(dataset)
+	if err != nil {
+		return err
+	}
+	if datasetId == uuid.Nil {
+		_, err = st.AddDataset(dataset)
+		// Upload data
+		// cmd = exec.Command("/bin/bash", "./createtable", "-d", "-s", cfg.StoreConfig.ConnStr, "-c", "-t")
+		_, err = exec.Command("/bin/bash", "./createtable", "-s", cfg.StoreConfig.ConnStr, "-c", store.DbSchema, "-t", dataset.TableName).Output()
+	} else {
+		// dataset already exists
+		_, err = exec.Command("/bin/bash", "./appendtable", "-d", "-s", cfg.StoreConfig.ConnStr, "-c", "-t").Output()
+	}
 
 	// return string(cmd), err
 	return err

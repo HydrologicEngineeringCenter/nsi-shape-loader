@@ -29,11 +29,12 @@ type PathConfig struct {
 
 // StoreConfig holds only params required for database connection
 type StoreConfig struct {
-	Dbuser string
-	Dbpass string
-	Dbname string
-	Dbhost string
-	Dbport string
+	ConnStr string
+	Dbuser  string
+	Dbpass  string
+	Dbname  string
+	Dbhost  string
+	Dbport  string
 }
 
 func (c *StoreConfig) Rdbmsconfig() dq.RdbmsConfig {
@@ -118,11 +119,12 @@ func NewConfig(c *cli.Context) (Config, error) {
 			return Config{}, errors.New("invalid sql connection string, respecify --sqlConn")
 		}
 		storeCfg = StoreConfig{
-			Dbuser: user,
-			Dbpass: pass,
-			Dbname: database,
-			Dbhost: host,
-			Dbport: port,
+			ConnStr: sqlConn,
+			Dbuser:  user,
+			Dbpass:  pass,
+			Dbname:  database,
+			Dbhost:  host,
+			Dbport:  port,
 		}
 	}
 

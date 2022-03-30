@@ -6,13 +6,7 @@
     go run . --mode upload --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp --xlsPath /workspaces/shape-sql-loader/metadata.xls --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword dbname=gis"
     go run . --mode access  --datasetId randomguid --group nsi --role admin
 
-    go build
-    dlv exec --headless --listen=0.0.0.0:2345 ./nsi-shape-loader
-    dlv dap --listen=0.0.0.0:2345 --api-version=2 --log
-    dlv debug --headless --listen=0.0.0.0:2345 --api-version=2 --log
-    dlv dap --listen=0.0.0.0:2345 --api-version=2 --log --log-output=dap
-
-Start debugger inside container + listen on mapped port
+To start debugger inside container + listen on mapped port
 
     dlv debug --listen=0.0.0.0:2345 --api-version=2 --log --log-output=dap --headless -- --mode prep --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp
 

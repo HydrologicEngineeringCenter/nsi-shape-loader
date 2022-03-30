@@ -6,11 +6,11 @@ import (
 )
 
 // TODO maybe this should be a config field
-const dbSchema string = "nsi"
+const DbSchema string = "nsi"
 
 var accessTable = goquery.TableDataSet{
 	Name:   "access",
-	Schema: dbSchema,
+	Schema: DbSchema,
 	Statements: map[string]string{
 		"selectId": `select id from access where dataset_id=$1 and value=$2`,
 		"insert":   `insert into access (dataset_id, access_group, role, permission) values ($1, $2, $3, $4) returning id`,
@@ -20,11 +20,11 @@ var accessTable = goquery.TableDataSet{
 
 var datasetTable = goquery.TableDataSet{
 	Name:   "dataset",
-	Schema: dbSchema,
+	Schema: DbSchema,
 	Statements: map[string]string{
-		"select":     `select * from domain where name=$1 and version=$2`,
-		"selectById": `select * from domain where id=$1`,
-		"insert": `insert into field (
+		"select":     `select * from dataset where name=$1, version=$2, shape=$3, purpose=$4, quality=$5`,
+		"selectById": `select * from dataset where id=$1`,
+		"insert": `insert into dataset (
             name,
             version,
             nsi_schema_id,
@@ -41,7 +41,7 @@ var datasetTable = goquery.TableDataSet{
 
 var domainTable = goquery.TableDataSet{
 	Name:   "domain",
-	Schema: dbSchema,
+	Schema: DbSchema,
 	Statements: map[string]string{
 		"selectId": `select id from domain where field_id=$1 and value=$2`,
 		"insert":   `insert into domain (field_id, value) values ($1, $2) returning id`,
@@ -51,7 +51,7 @@ var domainTable = goquery.TableDataSet{
 
 var fieldTable = goquery.TableDataSet{
 	Name:   "field",
-	Schema: dbSchema,
+	Schema: DbSchema,
 	Statements: map[string]string{
 		"select":     `select id from field where name=$1`,
 		"selectById": `select * from field where id=$1`,
@@ -62,7 +62,7 @@ var fieldTable = goquery.TableDataSet{
 
 var qualityTable = goquery.TableDataSet{
 	Name:   "quality",
-	Schema: dbSchema,
+	Schema: DbSchema,
 	Statements: map[string]string{
 		"selectId": `select id from quality where value=$1`,
 		"insert":   `insert into quality (value, description) values ($1, $2) returning id`,
@@ -72,22 +72,22 @@ var qualityTable = goquery.TableDataSet{
 
 var schemaFieldTable = goquery.TableDataSet{
 	Name:   "schema_field",
-	Schema: dbSchema,
+	Schema: DbSchema,
 	Statements: map[string]string{
-		"select": `select id from schema_field`,
-		"insert": `insert into schemafield (id, field_id) values ($1, $2) returning id`,
+		"select": `select id from schema_field where id=$1 and field_id=$2`,
+		"insert": `insert into schema_field (id, field_id) values ($1, $2) returning id`,
 	},
 	Fields: model.Field{},
 }
 
 var schemaTable = goquery.TableDataSet{
 	Name:   "schema",
-	Schema: dbSchema,
+	Schema: DbSchema,
 	Statements: map[string]string{
-		"select":     `select * from domain where name=$1 and version=$2`,
-		"selectId":   `select id from domain where name=$1 and version=$2`,
-		"selectById": `select * from domain where id=$1`,
-		"insert":     `insert into field (name, version, notes) values ($1, $2, $3) returning id`,
+		"select":     `select * from nsi_schema where name=$1 and version=$2`,
+		"selectId":   `select id from nsi_schema where name=$1 and version=$2`,
+		"selectById": `select * from nsi_schema where id=$1`,
+		"insert":     `insert into nsi_schema (name, version, notes) values ($1, $2, $3) returning id`,
 	},
 	Fields: model.Schema{},
 }
