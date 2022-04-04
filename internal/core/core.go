@@ -22,6 +22,7 @@ import (
 func Core(c *cli.Context) error {
 	//  pre - generate config xls from shp
 	//  upload - upload based on data and metadata from xls and shp
+	//  access - change access group and role
 	cfg, err := config.NewConfig(c)
 	if err != nil {
 		panic(err)
@@ -219,7 +220,6 @@ func Upload(cfg config.Config) error {
 			if err != nil {
 				panic(err)
 			}
-
 			///////////////////////////////
 			//   DOMAIN
 			// Process domain only if specified by field ie. field holds a discrete categorical variable
@@ -244,7 +244,7 @@ func Upload(cfg config.Config) error {
 			}
 		}
 		///////////////////////////////
-		//   SCHEMA_FIELD ASSOCIATION
+		//   SCHEMA_FIELD insert only on new
 		flagAssociation, err := st.SchemaFieldAssociationExists(schemaId, fieldId)
 		if err != nil {
 			return err
@@ -348,4 +348,8 @@ func ChangeAccess(cfg config.Config) error {
 	}
 
 	return err
+}
+
+func AddElevation(cfg config.Config) error {
+	return nil
 }

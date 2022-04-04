@@ -126,9 +126,10 @@ var (
 type Mode string
 
 const (
-	Prep   Mode = "prep"
-	Upload      = "upload"
-	Access      = "access"
+	Prep      Mode = "prep"
+	Upload         = "upload"
+	Access         = "access"
+	Elevation      = "elevation"
 )
 
 var (
