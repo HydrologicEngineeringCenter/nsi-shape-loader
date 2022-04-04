@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -168,19 +169,22 @@ func Upload(cfg config.Config) error {
 		Version: schemaVersion,
 		Notes:   schemaNotes,
 	}
+	log.Printf("Retrieving id for schema=%s version=%s\n", schema.Name, schema.Version)
 	schemaId, err = st.GetSchemaId(schema)
 	if err != nil {
 		return err
 	}
 	if schemaId == uuid.Nil {
+		log.Printf("schema=%s do not exists. Adding to database...\n", schema.Name)
 		schemaId, err = st.AddSchema(schema)
 		if err != nil {
 			panic(err)
 		}
 	}
+	schema.Id = schemaId
 
 	// init data from shp file
-	fmt.Println("Reading shapefile from: " + cfg.ShpPath)
+	log.Printf("Reading shapefile from: %s\n", cfg.ShpPath)
 	shpf, err := shp.Open(cfg.ShpPath)
 	if err != nil {
 		return err
@@ -211,15 +215,21 @@ func Upload(cfg config.Config) error {
 			Description: fieldDescription,
 			IsDomain:    bIsDomain,
 		}
+		log.Printf("Retrieving id for field=%s type=%s\n", field.Name, field.Type)
 		fieldId, err = st.GetFieldId(field)
 		if err != nil {
 			return err
 		}
-		if fieldId == uuid.Nil {
+		// If no id -> field is not in db -> add field + add association to schema + domain
+		if fieldId != uuid.Nil {
+			field.Id = fieldId
+		} else {
+			log.Printf("field=%s type=%s do not exists. Adding to database...\n", field.Name, field.Type)
 			fieldId, err = st.AddField(field)
 			if err != nil {
 				panic(err)
 			}
+			field.Id = fieldId
 			///////////////////////////////
 			//   DOMAIN
 			// Process domain only if specified by field ie. field holds a discrete categorical variable
@@ -235,31 +245,31 @@ func Upload(cfg config.Config) error {
 						Value:   v,
 					}
 					// This location can only be reached for new field inserts,
-					// can assume that domain do not exists
-					_, err := st.AddDomain(domain)
+					// can assume that domain, has not yet exists
+					domainId, err := st.AddDomain(domain)
 					if err != nil {
 						return err
 					}
+					domain.Id = domainId
 				}
 			}
-		}
-		///////////////////////////////
-		//   SCHEMA_FIELD insert only on new
-		flagAssociation, err := st.SchemaFieldAssociationExists(schemaId, fieldId)
-		if err != nil {
-			return err
-		}
-		if !flagAssociation {
-			_, err = st.AddSchemaFieldAssociation(schemaId, fieldId)
+			///////////////////////////////
+			//   SCHEMA_FIELD_ASSOCIATION insert only on new field insertion
+			flagAssociation, err := st.SchemaFieldAssociationExists(schemaId, fieldId)
 			if err != nil {
 				return err
+			}
+			if !flagAssociation {
+				_, err = st.AddSchemaFieldAssociation(schemaId, fieldId)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
 
 	////////////////////////////////////////
 	//  DATASET
-
 	datasetName, err := xlsF.GetCellValue("dataset", "C1")
 	if err != nil {
 		return err
@@ -313,17 +323,22 @@ func Upload(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
+	var output []byte
 	if datasetId == uuid.Nil {
-		_, err = st.AddDataset(dataset)
-		// Upload data
-		// cmd = exec.Command("/bin/bash", "./createtable", "-d", "-s", cfg.StoreConfig.ConnStr, "-c", "-t")
-		_, err = exec.Command("/bin/bash", "./createtable", "-s", cfg.StoreConfig.ConnStr, "-c", store.DbSchema, "-t", dataset.TableName).Output()
+		datasetId, err = st.AddDataset(dataset)
+		if err != nil {
+			return err
+		}
+		dataset.Id = datasetId
+		// create new table
+		log.Printf("Creating table=%s for dataset=%s", dataset.TableName, dataset.Name)
+		output, err = exec.Command("bash", "./assets/createtable", "-s", cfg.StoreConfig.ConnStr, "-c", store.DbSchema, "-t", dataset.TableName).Output()
 	} else {
 		// dataset already exists
-		_, err = exec.Command("/bin/bash", "./appendtable", "-d", "-s", cfg.StoreConfig.ConnStr, "-c", "-t").Output()
+		log.Printf("table=%s exists for dataset=%s. Appending rows...", dataset.TableName, dataset.Name)
+		output, err = exec.Command("bash", "./assets/appendtable", "-d", "-s", cfg.StoreConfig.ConnStr, "-c", "-t").Output()
 	}
-
-	// return string(cmd), err
+	log.Printf("\n%s", output)
 	return err
 }
 

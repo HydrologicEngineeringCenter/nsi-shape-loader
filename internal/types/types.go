@@ -57,7 +57,17 @@ var (
 		"F": Float,
 		"D": Date,
 	}
+	datatypeReadable = map[Datatype]string{
+		Char:   "text",
+		Number: "numeric",
+		Float:  "float",
+		Date:   "date",
+	}
 )
+
+func (t Datatype) String() string {
+	return datatypeReadable[t]
+}
 
 type Quality string
 
