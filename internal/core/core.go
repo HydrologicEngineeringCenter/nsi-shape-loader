@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/files"
@@ -151,7 +152,7 @@ func Upload(cfg config.Config) error {
 	//          Yes -> reference id
 	//          No -> panic
 	//      No -> create new dataset
-	//  Insert inventory table using bash script
+	//  Insert inventory table using ogr2ogr
 	xlsF, err := xls.NewXls(cfg.XlsPath)
 	if err != nil {
 		return err
@@ -332,13 +333,34 @@ func Upload(cfg config.Config) error {
 		dataset.Id = datasetId
 		// create new table
 		log.Printf("Creating table=%s for dataset=%s", dataset.TableName, dataset.Name)
-		output, err = exec.Command("bash", "./assets/createtable", "-s", cfg.StoreConfig.ConnStr, "-c", store.DbSchema, "-t", dataset.TableName).Output()
+		// output, err = exec.Command("bash", "./assets/createtable", "-s", strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database", "dbname"), "-f", cfg.ShpPath, "-c", store.DbSchema, "-t", dataset.TableName).Output()
+		// output, err = exec.Command(
+		// 	"ogr2ogr",
+		// 	"-f", `PostgreSQL`,
+		// 	fmt.Sprintf(`PG:"%s"`, strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "database=")),
+		// 	cfg.ShpPath,
+		// 	"-lco", "precision=no", fmt.Sprintf("schema=%s", store.DbSchema),
+		// 	"-nln", dataset.TableName,
+		// 	// fmt.Sprintf("%s.%s", store.DbSchema, dataset.TableName),
+		// ).Output()
+		execStr := fmt.Sprintf(`ogr2ogr -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
+			strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
+			cfg.ShpPath, store.DbSchema, dataset.TableName,
+		)
+		fmt.Println(execStr)
+		output, err = exec.Command(
+			"sh", "-c", execStr,
+		).Output()
 	} else {
 		// dataset already exists
 		log.Printf("table=%s exists for dataset=%s. Appending rows...", dataset.TableName, dataset.Name)
-		output, err = exec.Command("bash", "./assets/appendtable", "-d", "-s", cfg.StoreConfig.ConnStr, "-c", "-t").Output()
+		output, err = exec.Command("bash", "./assets/appendtable", "-s", cfg.StoreConfig.ConnStr, "-f", cfg.ShpPath, "-c", store.DbSchema, "-t", dataset.TableName).Output()
 	}
-	log.Printf("\n%s", output)
+	if err != nil {
+		return err
+	} else {
+		log.Printf("\n%s", output)
+	}
 	return err
 }
 
