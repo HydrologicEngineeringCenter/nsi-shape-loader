@@ -1,5 +1,5 @@
-drop table dataset;
 drop table access;
+drop table dataset;
 drop table quality;
 drop table domain;
 drop table schema_field;
