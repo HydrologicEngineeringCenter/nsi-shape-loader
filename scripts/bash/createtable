@@ -3,6 +3,7 @@
 while getopts e:s:c:t: flag
 do
     case "$flag" in
+        f) file=${OPTARG};;
         s) sqlCred=${OPTARG};;
         c) schema=${OPTARG};;
         t) table=${OPTARG};;
