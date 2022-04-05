@@ -294,7 +294,9 @@ func (st *PSStore) SchemaFieldAssociationExists(schemaID uuid.UUID, fieldId uuid
 	var ids []uuid.UUID
 	var result bool
 	err := st.DS.
-		Select(qualityTable.Statements["select"]).
+		Select().
+		DataSet(&schemaFieldTable).
+		StatementKey("select").
 		Params(schemaID, fieldId).
 		Dest(&ids).
 		Fetch()
