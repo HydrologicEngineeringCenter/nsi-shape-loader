@@ -1,4 +1,4 @@
-#shape-sql-loader
+# shape-sql-loader
 
 shape-sql-loader is intended to be a sysadmin tool to upload a set of shp files to the new NSIv2.6 database. Upload environment must be accessible to the PostGIS database instance. Compiled executable requires ogr2ogr and assets/metadataBase.xlsx.
 
