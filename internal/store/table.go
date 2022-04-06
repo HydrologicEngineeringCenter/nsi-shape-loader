@@ -36,11 +36,7 @@ var datasetTable = goquery.TableDataSet{
             created_by,
             quality_id
         ) values ($1, $2, $3, $4, ST_Envelope('POLYGON((0 0, 0 0, 0 0, 0 0))'::geometry), $5, $6, $7, $8) returning id`,
-		"updateBBox": `
-            update dataset
-                set shape=(select ST_Envelope(ST_Collect(wkb_geometry)) from $1)
-                where id=$2
-            `,
+		"updateBBox": `update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from {table_name}) where id=$1`,
 	},
 }
 

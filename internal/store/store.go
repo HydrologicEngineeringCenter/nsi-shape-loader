@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/model"
@@ -346,11 +347,13 @@ func (st *PSStore) SchemaFieldAssociationExists(sf model.SchemaField) (bool, err
 }
 
 func (st *PSStore) UpdateDatasetBBox(d model.Dataset) error {
+    // hacky way to dynamically generate table_name since identifiers cannot be used as variables
+    // should be safe from sql injection since all table names are generated internally from guids
+	var ids []interface{}
 	err := st.DS.
-		Select().
-		DataSet(&datasetTable).
-		StatementKey("updateBBox").
-		Params(d.TableName, d.Id).
+		Select(strings.ReplaceAll(datasetTable.Statements["updateBBox"], "{table_name}", d.TableName)).
+		Params(d.Id).
+		Dest(&ids).
 		Fetch()
 	return err
 }
