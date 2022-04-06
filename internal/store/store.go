@@ -99,13 +99,12 @@ func (st *PSStore) AddSchema(schema model.Schema) (uuid.UUID, error) {
 func (st *PSStore) AddDataset(d model.Dataset) (uuid.UUID, error) {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(datasetTable.Statements["insert"]).
+		Select(datasetTable.Statements["insertNullShape"]).
 		Params(
 			d.Name,
 			d.Version,
 			d.SchemaId,
 			d.TableName,
-			d.Shape,
 			d.Description,
 			d.Purpose,
 			d.CreatedBy,
@@ -160,6 +159,9 @@ func (st *PSStore) GetDomainId(d model.Domain) (uuid.UUID, error) {
 		Params(d.FieldId, d.Value).
 		Dest(&ids).
 		Fetch()
+	if err != nil {
+		return uuid.UUID{}, err
+	}
 	if len(ids) == 0 {
 		return uuid.UUID{}, nil
 	}
@@ -176,6 +178,9 @@ func (st *PSStore) GetAccessId(a model.Access) (uuid.UUID, error) {
 		Params(a.DatasetId, a.Group).
 		Dest(&ids).
 		Fetch()
+	if err != nil {
+		return uuid.UUID{}, err
+	}
 	if len(ids) == 0 {
 		return uuid.UUID{}, nil
 	}
@@ -188,10 +193,13 @@ func (st *PSStore) GetAccessId(a model.Access) (uuid.UUID, error) {
 func (st *PSStore) GetDatasetId(d model.Dataset) (uuid.UUID, error) {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(datasetTable.Statements["select"]).
-		Params(d.Name, d.Version, d.Shape, d.Purpose, d.QualityId).
+		Select(datasetTable.Statements["selectId"]).
+		Params(d.Name, d.Version, d.Purpose, d.QualityId).
 		Dest(&ids).
 		Fetch()
+	if err != nil {
+		return uuid.UUID{}, err
+	}
 	if len(ids) == 0 {
 		return uuid.UUID{}, nil
 	}
@@ -212,6 +220,37 @@ func (st *PSStore) GetDatasetId(d model.Dataset) (uuid.UUID, error) {
 	return ids[0], err
 }
 
+// GetDataset queries based on its Name, Version, Purpose, and QualityId
+func (st *PSStore) GetDataset(d *model.Dataset) error {
+	var ds []model.Dataset
+	err := st.DS.
+		Select(datasetTable.Statements["select"]).
+		Params(d.Name, d.Version, d.Purpose, d.QualityId).
+		Dest(&ds).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	if len(ds) == 0 {
+		return nil
+	}
+	if len(ds) > 1 {
+		return errors.New(fmt.Sprintf(`more than 1 dataset exists for
+        dataset.name=%s
+        dataset.version=%s
+        dataset.purpose=%s
+        dataset.quality_id=%s`,
+			d.Name,
+			d.Version,
+			d.Purpose,
+			d.QualityId,
+		))
+	}
+	// replace data at location referenced by pointer
+	*d = ds[0]
+	return err
+}
+
 func (st *PSStore) GetFieldId(f model.Field) (uuid.UUID, error) {
 	var ids []uuid.UUID
 	err := st.DS.
@@ -222,7 +261,7 @@ func (st *PSStore) GetFieldId(f model.Field) (uuid.UUID, error) {
 		Dest(&ids).
 		Fetch()
 	if len(ids) == 0 {
-		return uuid.UUID{}, nil
+		return uuid.UUID{}, err
 	}
 	if len(ids) > 1 {
 		return uuid.UUID{}, errors.New("more than 1 id exists for field.name=" + f.Name + " and field.type=" + string(f.Type))
@@ -237,6 +276,9 @@ func (st *PSStore) GetSchemaId(s model.Schema) (uuid.UUID, error) {
 		Params(s.Name, s.Version).
 		Dest(&ids).
 		Fetch()
+	if err != nil {
+		return uuid.UUID{}, err
+	}
 	if len(ids) == 0 {
 		return uuid.UUID{}, nil
 	}
@@ -253,6 +295,9 @@ func (st *PSStore) GetQualityId(q model.Quality) (uuid.UUID, error) {
 		Params(q.Value).
 		Dest(&ids).
 		Fetch()
+	if err != nil {
+		return uuid.UUID{}, err
+	}
 	if len(ids) == 0 {
 		return uuid.UUID{}, nil
 	}
@@ -285,12 +330,12 @@ func (st *PSStore) SchemaFieldAssociationExists(sf model.SchemaField) (bool, err
 	err := st.DS.
 		Select().
 		DataSet(&schemaFieldTable).
-		StatementKey("select").
+		StatementKey("selectId").
 		Params(sf.Id, sf.NsiFieldId).
 		Dest(&ids).
 		Fetch()
 	if err != nil {
-		return false, err
+		panic(err)
 	}
 	if len(ids) > 0 {
 		result = true
@@ -298,4 +343,14 @@ func (st *PSStore) SchemaFieldAssociationExists(sf model.SchemaField) (bool, err
 		result = false
 	}
 	return result, err
+}
+
+func (st *PSStore) UpdateDatasetBBox(d model.Dataset) error {
+	err := st.DS.
+		Select().
+		DataSet(&datasetTable).
+		StatementKey("updateBBox").
+		Params(d.TableName, d.Id).
+		Fetch()
+	return err
 }

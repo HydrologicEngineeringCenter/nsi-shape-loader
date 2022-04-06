@@ -22,9 +22,10 @@ var datasetTable = goquery.TableDataSet{
 	Name:   "dataset",
 	Schema: DbSchema,
 	Statements: map[string]string{
-		"select":     `select * from dataset where name=$1, version=$2, shape=$3, purpose=$4, quality=$5`,
+		"selectId":   `select id from dataset where name=$1 and version=$2 and purpose=$3 and quality_id=$4`,
+		"select":     `select * from dataset where name=$1 and version=$2 and purpose=$3 and quality_id=$4`,
 		"selectById": `select * from dataset where id=$1`,
-		"insert": `insert into dataset (
+		"insertNullShape": `insert into dataset (
             name,
             version,
             nsi_schema_id,
@@ -33,10 +34,14 @@ var datasetTable = goquery.TableDataSet{
             description,
             purpose,
             created_by,
-            quality_id,
-        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
+            quality_id
+        ) values ($1, $2, $3, $4, ST_Envelope('POLYGON((0 0, 0 0, 0 0, 0 0))'::geometry), $5, $6, $7, $8) returning id`,
+		"updateBBox": `
+            update dataset
+                set shape=(select ST_Envelope(ST_Collect(wkb_geometry)) from $1)
+                where id=$2
+            `,
 	},
-	Fields: model.Dataset{},
 }
 
 var domainTable = goquery.TableDataSet{
@@ -74,8 +79,8 @@ var schemaFieldTable = goquery.TableDataSet{
 	Name:   "schema_field",
 	Schema: DbSchema,
 	Statements: map[string]string{
-		"select": `select id from schema_field where id=$1 and field_id=$2`,
-		"insert": `insert into schema_field (id, field_id) values ($1, $2) returning id`,
+		"selectId": `select id from schema_field where id=$1 and field_id=$2`,
+		"insert":   `insert into schema_field (id, field_id, is_private) values ($1, $2, $3) returning id`,
 	},
 	Fields: model.Field{},
 }

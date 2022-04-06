@@ -144,7 +144,7 @@ func Upload(cfg config.Config) error {
 	//          Required domain?
 	//              Yes -> insert new domain referencing field
 	//              No -> continue
-	//  Check if field is associated to schema
+	//  Check if field is already associated to schema
 	//      Yes -> reference association
 	//      No -> add association
 	//  Check if dataset exists
@@ -170,13 +170,13 @@ func Upload(cfg config.Config) error {
 		Version: schemaVersion,
 		Notes:   schemaNotes,
 	}
-	log.Printf("Retrieving id for schema=%s version=%s\n", schema.Name, schema.Version)
+	log.Printf("Retrieving id for unique schema=%s version=%s\n", schema.Name, schema.Version)
 	schemaId, err = st.GetSchemaId(schema)
 	if err != nil {
 		return err
 	}
 	if schemaId == uuid.Nil {
-		log.Printf("schema=%s do not exists. Adding to database...\n", schema.Name)
+		log.Printf("schema=%s version=%s do not exists. Adding to schema table...\n", schema.Name, schema.Version)
 		schemaId, err = st.AddSchema(schema)
 		if err != nil {
 			panic(err)
@@ -198,7 +198,7 @@ func Upload(cfg config.Config) error {
 		///////////////////////////////
 		//   FIELD
 		var fieldId uuid.UUID
-		fieldDescription, err := xlsF.GetCellValue("field-domain", "D"+fmt.Sprint(j+2))
+		fieldDescription, err := xlsF.GetCellValue("field-domain", "E"+fmt.Sprint(j+2))
 		if err != nil {
 			return err
 		}
@@ -210,13 +210,21 @@ func Upload(cfg config.Config) error {
 		if err != nil {
 			return err
 		}
+		sPrivate, err := xlsF.GetCellValue("field-domain", "D"+fmt.Sprint(j+2))
+		if err != nil {
+			return err
+		}
+		bPrivate, err := strconv.ParseBool(sPrivate)
+		if err != nil {
+			return err
+		}
 		field := model.Field{
 			Name:        f.String(),
 			Type:        types.DatatypeReverse[string(f.Fieldtype)],
 			Description: fieldDescription,
 			IsDomain:    bIsDomain,
 		}
-		log.Printf("Retrieving id for field=%s type=%s\n", field.Name, field.Type)
+		log.Printf("Retrieving id for unique field=%s type=%s\n", field.Name, field.Type)
 		fieldId, err = st.GetFieldId(field)
 		if err != nil {
 			return err
@@ -225,7 +233,7 @@ func Upload(cfg config.Config) error {
 		if fieldId != uuid.Nil {
 			field.Id = fieldId
 		} else {
-			log.Printf("field=%s type=%s do not exists. Adding to database...\n", field.Name, field.Type)
+			log.Printf("field=%s type=%s do not exists. Adding to field table...\n", field.Name, field.Type)
 			fieldId, err = st.AddField(field)
 			if err != nil {
 				panic(err)
@@ -236,6 +244,7 @@ func Upload(cfg config.Config) error {
 			// Process domain only if specified by field ie. field holds a discrete categorical variable
 			// Currently this is specified from the metadata xls, could be a TODO to automatically detect field based only on the shp file
 			if bIsDomain {
+				log.Printf("field=%s holds discrete categorical variables. Adding to domain table...\n", field.Name)
 				fieldVals := shape.UniqueValues(shpf, f)
 				if err != nil {
 					return err
@@ -254,23 +263,30 @@ func Upload(cfg config.Config) error {
 					domain.Id = domainId
 				}
 			}
-			///////////////////////////////
-			//   SCHEMA_FIELD_ASSOCIATION insert only on new field insertion
-			flagAssociation, err := st.SchemaFieldAssociationExists(schemaId, fieldId)
+		}
+		///////////////////////////////
+		//   SCHEMA_FIELD_ASSOCIATION check for both cases - field already exists or new insert
+		//      the same field can be associated to multiple schemas
+		sf := model.SchemaField{
+			Id:         schemaId,
+			NsiFieldId: fieldId,
+			IsPrivate:  bPrivate,
+		}
+		flagAssociation, err := st.SchemaFieldAssociationExists(sf)
+		if err != nil {
+			return err
+		}
+		if !flagAssociation {
+			log.Printf("Unable to find association between schema=%s and field=%s. Adding to schema_field table...\n", schema.Name, field.Name)
+			_, err = st.AddSchemaFieldAssociation(sf)
 			if err != nil {
 				return err
-			}
-			if !flagAssociation {
-				_, err = st.AddSchemaFieldAssociation(schemaId, fieldId)
-				if err != nil {
-					return err
-				}
 			}
 		}
 	}
 
 	////////////////////////////////////////
-	//  DATASET
+	//  DATASET comes after the fields loop
 	datasetName, err := xlsF.GetCellValue("dataset", "C1")
 	if err != nil {
 		return err
@@ -296,6 +312,7 @@ func Upload(cfg config.Config) error {
 		return err
 	}
 
+	// TODO validate this quality input
 	var qualityId uuid.UUID
 	quality := model.Quality{
 		Value: types.QualityReverse[sDatasetQuality],
@@ -308,24 +325,24 @@ func Upload(cfg config.Config) error {
 		qualityId, err = st.AddQuality(quality)
 	}
 
-	tableName := "inventory_" + uuid.New().String()
 	dataset := model.Dataset{
 		Name:        datasetName,
 		Version:     datasetVersion,
 		SchemaId:    schemaId,
-		TableName:   tableName,
-		Shape:       types.ShapeReverse[shpf.GeometryType],
 		Description: datasetDescription,
 		Purpose:     datasetPurpose,
 		CreatedBy:   datasetCreatedBy,
 		QualityId:   qualityId,
 	}
-	datasetId, err := st.GetDatasetId(dataset)
+	err = st.GetDataset(&dataset)
 	if err != nil {
 		return err
 	}
 	var output []byte
-	if datasetId == uuid.Nil {
+	var datasetId uuid.UUID
+	if dataset.Id == uuid.Nil {
+		tableName := "inventory_" + strings.ReplaceAll(uuid.New().String(), "-", "_")
+		dataset.TableName = tableName
 		datasetId, err = st.AddDataset(dataset)
 		if err != nil {
 			return err
@@ -333,17 +350,7 @@ func Upload(cfg config.Config) error {
 		dataset.Id = datasetId
 		// create new table
 		log.Printf("Creating table=%s for dataset=%s", dataset.TableName, dataset.Name)
-		// output, err = exec.Command("bash", "./assets/createtable", "-s", strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database", "dbname"), "-f", cfg.ShpPath, "-c", store.DbSchema, "-t", dataset.TableName).Output()
-		// output, err = exec.Command(
-		// 	"ogr2ogr",
-		// 	"-f", `PostgreSQL`,
-		// 	fmt.Sprintf(`PG:"%s"`, strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "database=")),
-		// 	cfg.ShpPath,
-		// 	"-lco", "precision=no", fmt.Sprintf("schema=%s", store.DbSchema),
-		// 	"-nln", dataset.TableName,
-		// 	// fmt.Sprintf("%s.%s", store.DbSchema, dataset.TableName),
-		// ).Output()
-		execStr := fmt.Sprintf(`ogr2ogr -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
+		execStr := fmt.Sprintf(`ogr2ogr -f "PostgreSQL" PG:"%s" %s -lco precision=no  -lco geometry_name=shape -nln %s.%s`,
 			strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
 			cfg.ShpPath, store.DbSchema, dataset.TableName,
 		)
@@ -353,12 +360,23 @@ func Upload(cfg config.Config) error {
 		).Output()
 	} else {
 		// dataset already exists
+		dataset.Id = datasetId
 		log.Printf("table=%s exists for dataset=%s. Appending rows...", dataset.TableName, dataset.Name)
-		output, err = exec.Command("bash", "./assets/appendtable", "-s", cfg.StoreConfig.ConnStr, "-f", cfg.ShpPath, "-c", store.DbSchema, "-t", dataset.TableName).Output()
+		execStr := fmt.Sprintf(`ogr2ogr -append -update -progress -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
+			strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
+			cfg.ShpPath, store.DbSchema, dataset.TableName,
+		)
+		output, err = exec.Command(
+			"sh", "-c", execStr,
+		).Output()
 	}
 	if err != nil {
-		return err
+		panic(err)
 	} else {
+		err = st.UpdateDatasetBBox(dataset)
+		if err != nil {
+			return err
+		}
 		log.Printf("\n%s", output)
 	}
 	return err

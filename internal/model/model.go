@@ -111,15 +111,15 @@ type Access struct {
 }
 
 type Dataset struct {
-	Id          uuid.UUID   `db:"id"`
-	Name        string      `db:"name"`
-	Version     string      `db:"version"`
-	SchemaId    uuid.UUID   `db:"nsi_schema_id"`
-	TableName   string      `db:"table_name"`
-	Shape       types.Shape `db:"shape"`
-	Description string      `db:"description"`
-	Purpose     string      `db:"purpose"`
-	DateCreated time.Time   `db:"date_created"`
-	CreatedBy   string      `db:"created_by"`
-	QualityId   uuid.UUID   `db:"quality_id"`
+	Id          uuid.UUID `db:"id"`
+	Name        string    `db:"name"`
+	Version     string    `db:"version"`
+	SchemaId    uuid.UUID `db:"nsi_schema_id"`
+	TableName   string    `db:"table_name"`
+	Shape       []byte    `db:"shape"` // shape is a BBox enveloping all points within the inventory table
+	Description string    `db:"description"`
+	Purpose     string    `db:"purpose"`
+	DateCreated time.Time `db:"date_created"`
+	CreatedBy   string    `db:"created_by"`
+	QualityId   uuid.UUID `db:"quality_id"`
 }
