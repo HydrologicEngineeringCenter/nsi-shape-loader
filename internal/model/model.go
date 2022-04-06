@@ -86,6 +86,7 @@ type Field struct {
 type SchemaField struct {
 	Id         uuid.UUID `db:"id"`
 	NsiFieldId uuid.UUID `db:"nsi_field_id"`
+	IsPrivate  bool      `db:"private"`
 }
 
 type Schema struct {

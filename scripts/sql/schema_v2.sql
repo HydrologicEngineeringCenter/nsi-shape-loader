@@ -27,7 +27,7 @@ create table nsi_schema (
 create table schema_field (
     id uuid not null,
     field_id uuid not null,
-    private boolean not null,
+    is_private boolean not null,
     constraint fk_schema_field_field
         foreign key(field_id)
             references field(id),

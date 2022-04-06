@@ -62,13 +62,14 @@ func (st *PSStore) AddField(f model.Field) (uuid.UUID, error) {
 	return fId, err
 }
 
-func (st *PSStore) AddSchemaFieldAssociation(schemaId uuid.UUID, fieldId uuid.UUID) (uuid.UUID, error) {
+func (st *PSStore) AddSchemaFieldAssociation(sf model.SchemaField) (uuid.UUID, error) {
+	var schemaId uuid.UUID
 	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
 		err := st.DS.Select().
 			DataSet(&schemaFieldTable).
 			Tx(&tx).
 			StatementKey("insert").
-			Params(schemaId, fieldId).
+			Params(sf.Id, sf.NsiFieldId, sf.IsPrivate).
 			Dest(&schemaId).
 			Fetch()
 		if err != nil {
@@ -112,20 +113,8 @@ func (st *PSStore) AddDataset(d model.Dataset) (uuid.UUID, error) {
 		).
 		Dest(&ids).
 		Fetch()
-	if len(ids) == 0 {
-		return uuid.UUID{}, nil
-	}
-	if len(ids) > 1 {
-		return uuid.UUID{}, errors.New(fmt.Sprintf(
-			`more than 1 dataset_id exists for \n
-                dataset.name=%s\n
-                dataset.version=%s\n
-                dataset.shape=%s\n
-                dataset.purpose=%s
-                dataset.quality_id=%s`,
-			d.Name, d.Version, d.Shape, d.Purpose, d.QualityId,
-		),
-		)
+	if err != nil {
+		panic(err)
 	}
 	return ids[0], err
 }
@@ -290,14 +279,14 @@ func (st *PSStore) TableExists(schema string, table string) (bool, error) {
 	return result, err
 }
 
-func (st *PSStore) SchemaFieldAssociationExists(schemaID uuid.UUID, fieldId uuid.UUID) (bool, error) {
+func (st *PSStore) SchemaFieldAssociationExists(sf model.SchemaField) (bool, error) {
 	var ids []uuid.UUID
 	var result bool
 	err := st.DS.
 		Select().
 		DataSet(&schemaFieldTable).
 		StatementKey("select").
-		Params(schemaID, fieldId).
+		Params(sf.Id, sf.NsiFieldId).
 		Dest(&ids).
 		Fetch()
 	if err != nil {
