@@ -1,44 +1,6 @@
 package types
 
-import "github.com/jonas-p/go-shp"
-
 type Shape string
-
-// const (
-// 		shp.NULL Shape =        "NULL"
-// 		shp.POINT =       "POINT"
-// 		shp.POLYLINE =    "POLYLINE"
-// 		shp.POLYGON =     "POLYGON"
-// 		shp.MULTIPOINT =  "MULTIPOINT"
-// 		shp.POINTZ =      "POINTZ"
-// 		shp.POLYLINEZ =   "POLYLINEZ"
-// 		shp.POLYGONZ =    "POLYGONZ"
-// 		shp.MULTIPOINTZ = "MULTIPOINTZ"
-// 		shp.POINTM =      "POINTM"
-// 		shp.POLYLINEM =   "POLYLINEM"
-// 		shp.POLYGONM =    "POLYGONM"
-// 		shp.MULTIPOINTM = "MULTIPOINTM"
-// 		shp.MULTIPATCH =  "MULTIPATCH"
-// )
-
-var (
-	ShapeReverse = map[shp.ShapeType]Shape{
-		shp.NULL:        "NULL",
-		shp.POINT:       "POINT",
-		shp.POLYLINE:    "POLYLINE",
-		shp.POLYGON:     "POLYGON",
-		shp.MULTIPOINT:  "MULTIPOINT",
-		shp.POINTZ:      "POINTZ",
-		shp.POLYLINEZ:   "POLYLINEZ",
-		shp.POLYGONZ:    "POLYGONZ",
-		shp.MULTIPOINTZ: "MULTIPOINTZ",
-		shp.POINTM:      "POINTM",
-		shp.POLYLINEM:   "POLYLINEM",
-		shp.POLYGONM:    "POLYGONM",
-		shp.MULTIPOINTM: "MULTIPOINTM",
-		shp.MULTIPATCH:  "MULTIPATCH",
-	}
-)
 
 type Datatype string
 
@@ -72,16 +34,16 @@ func (t Datatype) String() string {
 type Quality string
 
 const (
-	High   Quality = "High"
-	Medium         = "Medium"
-	Low            = "Low"
+	High   Quality = "high"
+	Medium         = "med"
+	Low            = "low"
 )
 
 var (
 	QualityReverse = map[string]Quality{
-		"High":   High,
-		"Medium": Medium,
-		"Low":    Low,
+		"high": High,
+		"med":  Medium,
+		"low":  Low,
 	}
 )
 

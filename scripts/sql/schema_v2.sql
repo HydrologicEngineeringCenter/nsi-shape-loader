@@ -63,7 +63,7 @@ create table dataset (
     constraint fk_dataset_quality
         foreign key(quality_id)
             references quality(id),
-    unique(name, version, shape, purpose, quality_id)
+    unique(name, version, purpose, quality_id)
 );
 
 create table nsi_group (
