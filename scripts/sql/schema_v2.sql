@@ -1,21 +1,3 @@
-/* CREATE SCHEMA IF NOT EXISTS nsi; */
-/* CREATE extension postgis; */
-
-/* UPDATE pg_extension */
-/*   SET extrelocatable = TRUE */
-/*     WHERE extname = 'postgis'; */
-
-/* ALTER EXTENSION postgis */
-/*   SET SCHEMA nsi; */
-
-/* ALTER EXTENSION postgis */
-/*   UPDATE TO "2.5.2next"; */
-
-/* ALTER EXTENSION postgis */
-/*   UPDATE TO "2.5.2"; */
-
-/* SET search_path TO nsi; */
-
 create table field (
     id uuid not null default gen_random_uuid() primary key,
     name text not null,
@@ -45,6 +27,7 @@ create table nsi_schema (
 create table schema_field (
     id uuid not null,
     field_id uuid not null,
+    private boolean not null,
     constraint fk_schema_field_field
         foreign key(field_id)
             references field(id),
@@ -68,7 +51,7 @@ create table dataset (
     version text not null,
     nsi_schema_id uuid not null,
     table_name text not null,
-    shape Geometry not null,
+    shape geometry not null,
     description text,
     purpose text,
     date_created date not null default current_date,
@@ -83,18 +66,21 @@ create table dataset (
     unique(name, version, shape, purpose, quality_id)
 );
 
-create table access (
+create table nsi_group (
     id uuid not null default gen_random_uuid() primary key,
-    dataset_id uuid not null,
-    access_group text not null,
+    name text not null,
+    unique(name)
+);
+
+create table group_member (
+    id uuid not null default gen_random_uuid() primary key,
+    group_id uuid not null,
     role text not null,
-    permission text not null,
+    user_id text not null,
     constraint fk_access_dataset
-        foreign key(dataset_id)
-            references dataset(id),
-    constraint chk_access_role
-        check (role in ('admin', 'user', 'owner')),
-    unique(dataset_id, access_group)
+        foreign key(group_id)
+            references nsi_group(id),
+    unique(user_id)
 );
 
 /* INSERT INTO quality (value, description) */

@@ -1,4 +1,5 @@
-drop table access;
+drop table group_member;
+drop table group;
 drop table dataset;
 drop table quality;
 drop table domain;
