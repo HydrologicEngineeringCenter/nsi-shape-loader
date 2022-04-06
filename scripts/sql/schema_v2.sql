@@ -83,11 +83,11 @@ create table group_member (
     unique(user_id)
 );
 
-/* INSERT INTO quality (value, description) */
-/* VALUES ('high', ''); */
+insert into quality (value, description)
+values ('high', '');
 
-/* INSERT INTO quality (value, description) */
-/* VALUES ('medium', ''); */
+insert into quality (value, description)
+values ('med', '');
 
-/* INSERT INTO quality (value, description) */
-/* VALUES ('low', ''); */
+insert into quality (value, description)
+values ('low', '');
