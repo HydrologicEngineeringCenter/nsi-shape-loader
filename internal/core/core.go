@@ -360,9 +360,9 @@ func Upload(cfg config.Config) error {
 		).Output()
 	} else {
 		// dataset already exists
-		dataset.Id = datasetId
+		// currently append to table without any checking for duplication - TODO validate that file has not yet been uploaded
 		log.Printf("table=%s exists for dataset=%s. Appending rows...", dataset.TableName, dataset.Name)
-		execStr := fmt.Sprintf(`ogr2ogr -append -update -progress -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
+		execStr := fmt.Sprintf(`ogr2ogr -append -update -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
 			strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
 			cfg.ShpPath, store.DbSchema, dataset.TableName,
 		)
@@ -384,9 +384,6 @@ func Upload(cfg config.Config) error {
 
 func ChangeAccess(cfg config.Config) error {
 	st, err := store.NewStore(cfg)
-	////////////////////////////////////////
-	//  ACCESS
-
 	var accessId uuid.UUID
 	access := model.Access{
 		DatasetId:  cfg.AccessConfig.DatasetId,
