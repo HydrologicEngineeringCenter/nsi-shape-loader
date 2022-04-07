@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -153,6 +154,7 @@ func Upload(cfg config.Config) error {
 	//          No -> panic
 	//      No -> create new dataset
 	//  Insert inventory table using ogr2ogr
+	log.Printf("Reading metadata from: %s\n", cfg.XlsPath)
 	xlsF, err := xls.NewXls(cfg.XlsPath)
 	if err != nil {
 		return err
@@ -245,7 +247,7 @@ func Upload(cfg config.Config) error {
 			// Currently this is specified from the metadata xls, could be a TODO to automatically detect field based only on the shp file
 			if bIsDomain {
 				log.Printf("field=%s holds discrete categorical variables. Adding to domain table...\n", field.Name)
-				fieldVals := shape.UniqueValues(shpf, f)
+				fieldVals, err := shape.UniqueValues(shpf, f)
 				if err != nil {
 					return err
 				}
@@ -338,7 +340,6 @@ func Upload(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	var output []byte
 	var datasetId uuid.UUID
 	if dataset.Id == uuid.Nil {
 		tableName := "inventory_" + strings.ReplaceAll(uuid.New().String(), "-", "_")
@@ -350,25 +351,32 @@ func Upload(cfg config.Config) error {
 		dataset.Id = datasetId
 		// create new table
 		log.Printf("Creating table=%s for dataset=%s", dataset.TableName, dataset.Name)
-		execStr := fmt.Sprintf(`ogr2ogr -f "PostgreSQL" PG:"%s" %s -lco precision=no  -lco geometry_name=shape -nln %s.%s`,
+		execStr := fmt.Sprintf(`ogr2ogr -f "PostgreSQL" PG:"%s" %s -lco precision=no -lco fid=fd_id -lco geometry_name=shape -nln %s.%s`,
 			strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
 			cfg.ShpPath, store.DbSchema, dataset.TableName,
 		)
 		fmt.Println(execStr)
-		output, err = exec.Command(
+		_, err = exec.Command(
 			"sh", "-c", execStr,
 		).Output()
 	} else {
 		// dataset already exists
-		// currently append to table without any checking for duplication - TODO validate that file has not yet been uploaded
-		log.Printf("table=%s exists for dataset=%s. Appending rows...", dataset.TableName, dataset.Name)
-		execStr := fmt.Sprintf(`ogr2ogr -append -update -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
-			strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
-			cfg.ShpPath, store.DbSchema, dataset.TableName,
-		)
-		output, err = exec.Command(
-			"sh", "-c", execStr,
-		).Output()
+		flagDataInStore, err := st.ShpDataInStore(dataset, shpf)
+		if err != nil {
+			return err
+		}
+		if !flagDataInStore { // data has not yet been added to store
+			log.Printf("table=%s exists for dataset=%s. Appending rows...", dataset.TableName, dataset.Name)
+			execStr := fmt.Sprintf(`ogr2ogr -append -update -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
+				strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
+				cfg.ShpPath, store.DbSchema, dataset.TableName,
+			)
+			_, err = exec.Command(
+				"sh", "-c", execStr,
+			).Output()
+		} else {
+			return errors.New("shp file has already been uploaded")
+		}
 	}
 	if err != nil {
 		panic(err)
@@ -377,7 +385,7 @@ func Upload(cfg config.Config) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("\n%s", output)
+		log.Printf("Data uploaded to dataset.name= %s dataset.id=%s", dataset.Name, dataset.Id)
 	}
 	return err
 }

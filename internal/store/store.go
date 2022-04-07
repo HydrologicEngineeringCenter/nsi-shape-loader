@@ -4,11 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"strings"
 
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/model"
+	shape "github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/shp"
 	"github.com/google/uuid"
+	"github.com/jonas-p/go-shp"
 	"github.com/usace/goquery"
 )
 
@@ -347,13 +350,48 @@ func (st *PSStore) SchemaFieldAssociationExists(sf model.SchemaField) (bool, err
 }
 
 func (st *PSStore) UpdateDatasetBBox(d model.Dataset) error {
-    // hacky way to dynamically generate table_name since identifiers cannot be used as variables
-    // should be safe from sql injection since all table names are generated internally from guids
+	// hacky way to dynamically generate table_name since identifiers cannot be used as variables
+	// should be safe from sql injection since all table names are generated internally from guids
 	var ids []interface{}
 	err := st.DS.
 		Select(strings.ReplaceAll(datasetTable.Statements["updateBBox"], "{table_name}", d.TableName)).
 		Params(d.Id).
-		Dest(&ids).
+		Dest(&ids). // interface doesn't work without a dest sink
 		Fetch()
 	return err
+}
+
+// ShpDataInStore checks if shp file has already been uploaded to database
+func (st *PSStore) ShpDataInStore(d model.Dataset, s *shp.Reader) (bool, error) {
+	// algo takes a set of random sample points, if any sample matches with
+	// an entry in the db, return true
+	var ids []int
+	sampleSize := 50
+
+	xIdx, err := shape.FieldIdx(s, "X")
+	if err != nil {
+		return false, err
+	}
+	yIdx, err := shape.FieldIdx(s, "Y")
+	if err != nil {
+		return false, err
+	}
+
+	for i := 0; i < sampleSize; i++ {
+		sampleIdx := rand.Int() % s.AttributeCount()
+		x := s.ReadAttribute(sampleIdx, xIdx)
+		y := s.ReadAttribute(sampleIdx, yIdx)
+		err := st.DS.
+			Select(strings.ReplaceAll(datasetTable.Statements["structureInInventory"], "{table_name}", d.TableName)).
+			Params(x, y).
+			Dest(&ids).
+			Fetch()
+		if err != nil {
+			return false, err
+		}
+		if len(ids) > 0 {
+			return true, nil
+		}
+	}
+	return false, nil
 }
