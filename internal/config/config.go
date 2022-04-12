@@ -2,22 +2,42 @@ package config
 
 import (
 	"errors"
+	"fmt"
 
+	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/model"
+	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/types"
+	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/util"
+	"github.com/dlclark/regexp2"
+	"github.com/google/uuid"
+	suuid "github.com/satori/go.uuid"
 	"github.com/urfave/cli/v2"
 	dq "github.com/usace/goquery"
 )
 
+// Config is for the general app
 type Config struct {
-	Dbuser      string
-	Dbpass      string
-	Dbname      string
-	Dbtablename string
-	Dbhost      string
-	Dbport      string
-	FilePath    string
+	Mode types.Mode
+	PathConfig
+	StoreConfig
+	AccessConfig model.Access
 }
 
-func (c *Config) Rdbmsconfig() dq.RdbmsConfig {
+type PathConfig struct {
+	ShpPath string
+	XlsPath string
+}
+
+// StoreConfig holds only params required for database connection
+type StoreConfig struct {
+	ConnStr string
+	Dbuser  string
+	Dbpass  string
+	Dbname  string
+	Dbhost  string
+	Dbport  string
+}
+
+func (c *StoreConfig) Rdbmsconfig() dq.RdbmsConfig {
 	return dq.RdbmsConfig{
 		Dbuser:   c.Dbuser,
 		Dbpass:   c.Dbpass,
@@ -31,16 +51,132 @@ func (c *Config) Rdbmsconfig() dq.RdbmsConfig {
 
 // NewConfig generates new config from cli args context
 func NewConfig(c *cli.Context) (Config, error) {
-	if c.NumFlags() < 5 {
-		return Config{}, errors.New("newconfig: not enough input flags")
+
+	mode := types.ModeReverse[c.String("mode")]
+	// validate for valid mode
+	if mode != types.Access && mode != types.Prep && mode != types.Upload {
+		return Config{}, errors.New(fmt.Sprintf(
+			"invalid mode, --mode can only be %s, %s, or %s",
+			types.Access,
+			types.Prep,
+			types.Upload,
+		))
 	}
+
+	var storeCfg StoreConfig
+	var pathCfg PathConfig
+	var accessCfg model.Access
+
+	// validate sql connection creds
+	if mode == types.Access || mode == types.Upload {
+		sqlConn := c.String("sqlConn")
+		if sqlConn == "" {
+			return Config{}, errors.New("invalid sql connection string, --sqlConn should not be empty")
+		}
+		var user, pass, database, host, port string
+		// std lib regex doesn't support lookahead and lookbehind????????????????????????????????????????????????????????????????????????????????????????????????????????
+		// user = strings.ReplaceAll(regexp2.MustCompile(`(?<=user=).+?(?=\s)`, 0).FindString(sqlConn), " ", "")
+		// pass = strings.ReplaceAll(regexp2.MustCompile(`(?<=password=).+?(?=\s)`, 0).FindString(sqlConn), " ", "")
+		// name = strings.ReplaceAll(regexp2.MustCompile(`(?<=name=).+?(?=\s)`).FindString(sqlConn), " ", "")
+		// host = strings.ReplaceAll(regexp2.MustCompile(`(?<=host=).+?(?=\s)`).FindString(sqlConn), " ", "")
+		// port = strings.ReplaceAll(regexp2.MustCompile(`(?<=port=).+?(?=\s)`).FindString(sqlConn), " ", "")
+
+		var re *regexp2.Regexp
+		var m *regexp2.Match
+		var err error
+		re = regexp2.MustCompile(`(?<=user=).+?(?=\s|$)`, 0)
+		m, err = re.FindStringMatch(sqlConn)
+		if err != nil || m == nil {
+			return Config{}, errors.New("invalid sql connection string, unable to parse 'user' argument")
+		}
+		user = m.String()
+		re = regexp2.MustCompile(`(?<=password=).+?(?=\s|$)`, 0)
+		m, err = re.FindStringMatch(sqlConn)
+		if err != nil || m == nil {
+			return Config{}, errors.New("invalid sql connection string, unable to parse 'password' argument")
+		}
+		pass = m.String()
+		re = regexp2.MustCompile(`(?<=host=).+?(?=\s|$)`, 0)
+		m, err = re.FindStringMatch(sqlConn)
+		if err != nil || m == nil {
+			return Config{}, errors.New("invalid sql connection string, unable to parse 'host' argument")
+		}
+		host = m.String()
+		re = regexp2.MustCompile(`(?<=port=).+?(?=\s|$)`, 0)
+		m, err = re.FindStringMatch(sqlConn)
+		if err != nil || m == nil {
+			return Config{}, errors.New("invalid sql connection string, unable to parse 'port' argument")
+		}
+		port = m.String()
+		re = regexp2.MustCompile(`(?<=database=).+?(?=\s|$)`, 0)
+		m, err = re.FindStringMatch(sqlConn)
+		if err != nil || m == nil {
+			return Config{}, errors.New("invalid sql connection string, unable to parse 'database' argument")
+		}
+		database = m.String()
+
+		if util.StrContains([]string{sqlConn, user, pass, database, host, port}, "") {
+			return Config{}, errors.New("invalid sql connection string, respecify --sqlConn")
+		}
+		storeCfg = StoreConfig{
+			ConnStr: sqlConn,
+			Dbuser:  user,
+			Dbpass:  pass,
+			Dbname:  database,
+			Dbhost:  host,
+			Dbport:  port,
+		}
+	}
+
+	// validate file pathings
+	if mode == types.Prep || mode == types.Upload {
+		pathCfg = PathConfig{
+			ShpPath: c.Path("shpPath"),
+			XlsPath: c.Path("xlsPath"),
+		}
+		if pathCfg.ShpPath == "" {
+			return Config{}, errors.New("invalid path to shp file, --shpPath should not be empty")
+		}
+		if mode == types.Upload && pathCfg.XlsPath == "" {
+			return Config{}, errors.New("invalid path to xls file, --xlsPath should not be empty")
+		}
+	}
+
+	// validate access mod params
+	if mode == types.Access {
+		role := types.Role(c.String("role"))
+		if !util.StrContains([]string{string(types.Admin), string(types.Owner), string(types.User)}, string(role)) {
+			return Config{}, errors.New(fmt.Sprintf(
+				"invalid role, --role accepts only %s, %s, or %s",
+				types.Admin,
+				types.Owner,
+				types.User,
+			))
+		}
+		group := c.String("group")
+		if group == "" {
+			return Config{}, errors.New("invalid group, --group must not be empty")
+		}
+		sDatasetId := c.String("datasetId")
+		if sDatasetId == "" {
+			return Config{}, errors.New("invalid datasetId, --datasetId must not be empty")
+		}
+		datasetId, err := suuid.FromString(sDatasetId)
+		gDatasetId, err := uuid.FromBytes(datasetId.Bytes())
+		if err != nil {
+			return Config{}, err
+		}
+		accessCfg = model.Access{
+			DatasetId: gDatasetId,
+			Group:     group,
+			Role:      role,
+		}
+	}
+
 	return Config{
-		Dbuser:      c.String("dbuser"),
-		Dbpass:      c.String("dbpass"),
-		Dbhost:      c.String("dbhost"),
-		Dbport:      c.String("dbport"),
-		Dbname:      c.String("dbname"),
-		Dbtablename: c.String("dbtname"),
-		FilePath:    c.String("filepath"),
+		Mode:         mode,
+		PathConfig:   pathCfg,
+		StoreConfig:  storeCfg,
+		AccessConfig: accessCfg,
 	}, nil
 }

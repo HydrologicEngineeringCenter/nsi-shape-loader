@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Upload multiple shape file using "upload" --mode
+while getopts d:s:c:t: flag
+do
+    case "$flag" in
+        d) directory=${OPTARG};;
+        s) sqlCred=${OPTARG};;
+        x) xlsPath=${OPTARG};;
+    esac
+done
+
+suffix="shp"
+
+upload() {
+    list=$(find $directory -type f -name "*.$suffix")
+    for file in $list
+    do
+        go run . --mode upload --sql $sqlCred --xlsPath $xlsPath --shpPath $file
+    done
+}
+
+upload

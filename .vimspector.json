@@ -1,0 +1,159 @@
+{
+  "adapters": {
+    "docker-dlv": {
+      "command": [
+        "node",
+        "${gadgetDir}/vscode-go/dist/debugAdapter.js"
+      ],
+      "launch": {
+        "remote": {
+          "container": "SHAPELOADER_DEV",
+          "runCommand": [
+            "dlv",
+            "debug",
+            "--listen=0.0.0.0:2345",
+            "--api-version=2",
+            "--log",
+            "--log-output=dap",
+            "--headless",
+            "%CMD%"
+          ]
+        },
+        "delay": "500m"
+      }
+    }
+  },
+  "configurations": {
+    "TEST DON'T USE": {
+      "adapter": "delve",
+      "configuration": {
+        "request": "launch",
+        "program": "${Executable}",
+        "args": [
+          "*${Args}"
+        ],
+        "sourceLanguages": [
+          "go"
+        ]
+      },
+      "breakpoints": {
+        "exception": {
+          "cpp_throw": "Y",
+          "cpp_ctach": "N"
+        }
+      }
+    },
+    "localLaunch-prep": {
+      "adapter": "vscode-go",
+      "type": "go",
+      "configuration": {
+        "request": "launch",
+        "program": "${fileDirname}",
+        "args": [
+          "--mode",
+          "prep",
+          "--shpPath",
+          "~/dev/nsi/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp"
+        ],
+        "mode": "debug",
+        "dlvToolPath": "~/go/bin/dlv"
+      }
+    },
+    "remoteConnect": {
+      "adapter": "vscode-go",
+      "configuration": {
+        "request": "attach",
+        "mode": "remote",
+        "remotePath": "/workspaces/shape-sql-loader",
+        "cwd": "${workspaceRoot}",
+        "host": "host.docker.internal",
+        "port": 2345
+      }
+    },
+    "remoteLaunch-prep": {
+      "adapter": "docker-dlv",
+      "type": "go",
+      "remote-request": "launch",
+      "remote-cmdLine": [
+        "--",
+        "--mode",
+        "prep",
+        "--shpPath",
+        "/workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp"
+      ],
+      "configuration": {
+        "request": "attach",
+        "mode": "remote",
+        "remotePath": "/workspaces/shape-sql-loader",
+        "cwd": "${workspaceRoot}",
+        "host": "host.docker.internal",
+        "port": 2345
+      }
+    },
+    "remoteLaunch-upload": {
+      "adapter": "docker-dlv",
+      "type": "go",
+      "remote-request": "launch",
+      "remote-cmdLine": [
+        "--",
+        "--mode",
+        "upload",
+        "--shpPath",
+        "/workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp",
+        "--xlsPath",
+        "/workspaces/shape-sql-loader/metadatatest.xlsx",
+        "--sqlConn",
+        "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+      ],
+      "configuration": {
+        "request": "attach",
+        "mode": "remote",
+        "remotePath": "/workspaces/shape-sql-loader",
+        "cwd": "${workspaceRoot}",
+        "host": "host.docker.internal",
+        "port": 2345
+      }
+    },
+    "remoteLaunch-access": {
+      "adapter": "docker-dlv",
+      "type": "go",
+      "remote-request": "launch",
+      "remote-cmdLine": [
+        "--",
+        "--mode",
+        "access",
+        "--group",
+        "nsiNewSchema_admin",
+        "--role",
+        "admin",
+        "--sqlConn",
+        "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+      ],
+      "configuration": {
+        "request": "attach",
+        "mode": "remote",
+        "remotePath": "/workspaces/shape-sql-loader",
+        "cwd": "${workspaceRoot}",
+        "host": "host.docker.internal",
+        "port": 2345
+      }
+    },
+    "remoteLaunch-function": {
+      "adapter": "docker-dlv",
+      "type": "go",
+      "remote-request": "launch",
+      "remote-cmdLine": [
+        "from",
+        "/workspaces/shape-sql-loader/internal/core"
+      ],
+      "configuration": {
+        "request": "attach",
+        "mode": "remote",
+        "remotePath": "/workspaces/shape-sql-loader",
+        "cwd": "${workspaceRoot}",
+        "host": "host.docker.internal",
+        "port": 2345
+      }
+    }
+  }
+}

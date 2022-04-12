@@ -1,5 +1,12 @@
 package model
 
+import (
+	"time"
+
+	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/types"
+	"github.com/google/uuid"
+)
+
 // ducktyping in go with reflect is a bad idea
 type Point struct {
 	Bid        string  `db:"bid"` //
@@ -51,4 +58,68 @@ type Point struct {
 	Censregion string  `db:"censregion"` //
 	Firmzone   string  `db:"firmzone"`
 	Firmdate   string  `db:"firmdate"` //
+}
+
+//  Data is organized into the following concepts:
+//  Inventory - Table holding actual data ie concrete data within the dataset
+//  Dataset - Grouping of data
+//      Access - Access definition specific to each dataset
+//      Quality - Quality of dataset
+//      Schema - Grouping of unified format across multiple datasets
+//          Field - Data field tied to each dataset
+//          Domain - Set of possible values if the field is discrete categorical
+
+type Domain struct {
+	Id      uuid.UUID `db:"id"`
+	FieldId uuid.UUID `db:"field_id"`
+	Value   string    `db:"value"`
+}
+
+type Field struct {
+	Id          uuid.UUID      `db:"id"`
+	Name        string         `db:"name"`
+	Type        types.Datatype `db:"type"`
+	Description string         `db:"description"`
+	IsDomain    bool           `db:"is_domain"`
+}
+
+type SchemaField struct {
+	Id         uuid.UUID `db:"id"`
+	NsiFieldId uuid.UUID `db:"nsi_field_id"`
+	IsPrivate  bool      `db:"private"`
+}
+
+type Schema struct {
+	Id      uuid.UUID `db:"id"`
+	Name    string    `db:"name"`
+	Version string    `db:"version"`
+	Notes   string    `db:"notes"`
+}
+
+type Quality struct {
+	Id          uuid.UUID     `db:"id"`
+	Value       types.Quality `db:"value"`
+	Description string        `db:"description"`
+}
+
+type Access struct {
+	Id         uuid.UUID  `db:"id"`
+	DatasetId  uuid.UUID  `db:"dataset_id"`
+	Group      string     `db:"access_group"`
+	Role       types.Role `db:"role"`
+	Permission string     `db:"permission"`
+}
+
+type Dataset struct {
+	Id          uuid.UUID `db:"id"`
+	Name        string    `db:"name"`
+	Version     string    `db:"version"`
+	SchemaId    uuid.UUID `db:"nsi_schema_id"`
+	TableName   string    `db:"table_name"`
+	Shape       []byte    `db:"shape"` // shape is a BBox enveloping all points within the inventory table
+	Description string    `db:"description"`
+	Purpose     string    `db:"purpose"`
+	DateCreated time.Time `db:"date_created"`
+	CreatedBy   string    `db:"created_by"`
+	QualityId   uuid.UUID `db:"quality_id"`
 }

@@ -10,52 +10,63 @@ import (
 
 // main entry point into app containing an args parser wrapper
 func main() {
+
 	app := &cli.App{
 		Name:   "nsi-loader",
 		Usage:  "upload nsi shapefile to postgis database",
 		Action: core.Core,
 		Flags: []cli.Flag{
+
 			&cli.StringFlag{
-				Name:     "dbuser",
-				Aliases:  []string{"u"},
-				Usage:    "database username",
+				Name:     "mode",
+				Aliases:  []string{"m"},
+				Usage:    "prep/upload/access. 'prep' prepares a config excel templates, 'upload' uploads data, 'access' changes access group and role",
 				Required: true,
 			},
+
+			// xlsPath flag required for both Prep and Upload modes
+			&cli.PathFlag{
+				Name:    "xlsPath",
+				Aliases: []string{"x"},
+				Usage:   "",
+			},
+			// Upload
+			&cli.PathFlag{
+				Name:    "shpPath",
+				Aliases: []string{"s"},
+				Usage:   "",
+			},
+
+			// consider adding this flag for uploading multiple files
+			// &cli.StringFlag{
+			// 	Name:     "directory",
+			// 	Aliases:  []string{"d"},
+			// 	Usage:    "path to input directory containing shapefiles",
+			// 	Required: false,
+			// },
+
+			// db access info
 			&cli.StringFlag{
-				Name:     "dbpass",
-				Aliases:  []string{"p"},
-				Usage:    "database password",
-				Required: true,
+				Name:    "sqlConn",
+				Aliases: []string{"q"},
+				Usage:   "",
+			},
+
+			// access mode
+			&cli.StringFlag{
+				Name:    "datasetId",
+				Aliases: []string{"i"},
+				Usage:   "",
 			},
 			&cli.StringFlag{
-				Name:     "dbhost",
-				Aliases:  []string{"t"},
-				Usage:    "database hostname",
-				Required: true,
+				Name:    "group",
+				Aliases: []string{"g"},
+				Usage:   "",
 			},
 			&cli.StringFlag{
-				Name:     "dbport",
-				Aliases:  []string{"o"},
-				Usage:    "database access port",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "dbname",
-				Aliases:  []string{"n"},
-				Usage:    "database name",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "dbtname",
-				Aliases:  []string{"a"},
-				Usage:    "table name",
-				Required: true,
-			},
-			&cli.StringFlag{
-				Name:     "filepath",
-				Aliases:  []string{"d"},
-				Usage:    "path to input shapefile",
-				Required: true,
+				Name:    "role",
+				Aliases: []string{"r"},
+				Usage:   "",
 			},
 		},
 	}

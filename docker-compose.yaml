@@ -7,7 +7,9 @@ services:
       context: .
       dockerfile: dev.Dockerfile
     ports:
-      - 3031:3031
+      - 2345:2345
+    security_opt:
+      - seccomp:unconfined
     volumes:
       - .:/workspaces/shape-sql-loader
     env_file:
@@ -15,6 +17,8 @@ services:
     working_dir: /workspaces/shape-sql-loader
     tty: true
     entrypoint: ["bash"]
+    # dlv entrypoint to auto setup debugging server
+    # entrypoint: ['/go/bin/dlv', '--listen=: 2345', '--headless=true', '--api-version=2', 'exec', 'main.go']
 
   postgis:
     image: kartoza/postgis
@@ -22,6 +26,7 @@ services:
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASS=notPassword
+      - TIMESCALEDB_TELEMETRY=off
     ports:
       - 25432:5432
     volumes:
