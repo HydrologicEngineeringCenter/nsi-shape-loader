@@ -6,11 +6,11 @@ database instance. Compiled executable requires ogr2ogr and assets/metadataBase.
 
 Usage:
 
-'''golang
+```golang
     go run . --mode prep --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp
     go run . --mode upload --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15003.shp --xlsPath /workspaces/shape-sql-loader/metadatatest.xlsx --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
     go run . --mode access  --datasetId randomguid --group nsi --role admin
-'''
+```
 
 Database setup and cleanup SQL scripts are stored in scripts/sql/. All tables must be created inside the 'nsi' database schema.
 
@@ -27,6 +27,6 @@ attached .vimspector config can "docker exec" into a container and start the
 delve server automatically. Alternatively, the debugger can be start and
 attached manually via the "remoteConnect" option:
 
-'''
+```
     dlv debug --listen=0.0.0.0:2345 --api-version=2 --log --log-output=dap --headless -- --mode prep --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp
-'''
+```
