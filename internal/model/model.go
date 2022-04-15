@@ -3,11 +3,12 @@ package model
 import (
 	"time"
 
-	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/types"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/types"
 	"github.com/google/uuid"
 )
 
 // ducktyping in go with reflect is a bad idea
+// Point should not be used in production, just for mocking
 type Point struct {
 	Bid        string  `db:"bid"` //
 	Cbfips2010 string  `db:"cbfips2010"`
@@ -81,12 +82,13 @@ type Field struct {
 	Type        types.Datatype `db:"type"`
 	Description string         `db:"description"`
 	IsDomain    bool           `db:"is_domain"`
+	IsInDb      bool           // store in db or remove
 }
 
 type SchemaField struct {
-	Id         uuid.UUID `db:"id"`
+	Id         uuid.UUID `db:"id"` // map to schema_id key
 	NsiFieldId uuid.UUID `db:"nsi_field_id"`
-	IsPrivate  bool      `db:"private"`
+	IsPrivate  bool      `db:"private"` // field can be private in one schema but not another
 }
 
 type Schema struct {
@@ -102,14 +104,6 @@ type Quality struct {
 	Description string        `db:"description"`
 }
 
-type Access struct {
-	Id         uuid.UUID  `db:"id"`
-	DatasetId  uuid.UUID  `db:"dataset_id"`
-	Group      string     `db:"access_group"`
-	Role       types.Role `db:"role"`
-	Permission string     `db:"permission"`
-}
-
 type Dataset struct {
 	Id          uuid.UUID `db:"id"`
 	Name        string    `db:"name"`
@@ -122,4 +116,16 @@ type Dataset struct {
 	DateCreated time.Time `db:"date_created"`
 	CreatedBy   string    `db:"created_by"`
 	QualityId   uuid.UUID `db:"quality_id"`
+}
+
+type Group struct {
+	Id   uuid.UUID `db:"id"`
+	Name string    `db:"name"`
+}
+
+type Member struct {
+	Id      uuid.UUID  `db:"id"`
+	GroupId uuid.UUID  `db:"group_id"`
+	Role    types.Role `db:"role"`
+	UserId  string     `db:"user_id"`
 }

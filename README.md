@@ -15,7 +15,7 @@ must be created inside the 'nsi' database schema.
         go run . --mode upload --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15003.shp --xlsPath /workspaces/shape-sql-loader/metadatatest.xlsx --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 
     3. Add access groups via "--mode access"
-        go run . --mode access  --datasetId randomguid --group nsi --role admin
+        go run . --mode access  --group nsi_surveyor --role admin --user user_id
 ```
 
 Bonus VIM config: Delve can be used to start a headless debug server inside a

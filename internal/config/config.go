@@ -4,12 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/model"
-	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/types"
-	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/util"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/types"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/util"
 	"github.com/dlclark/regexp2"
-	"github.com/google/uuid"
-	suuid "github.com/satori/go.uuid"
 	"github.com/urfave/cli/v2"
 	dq "github.com/usace/goquery"
 )
@@ -19,7 +16,7 @@ type Config struct {
 	Mode types.Mode
 	PathConfig
 	StoreConfig
-	AccessConfig model.Access
+	AccessConfig
 }
 
 type PathConfig struct {
@@ -35,6 +32,12 @@ type StoreConfig struct {
 	Dbname  string
 	Dbhost  string
 	Dbport  string
+}
+
+type AccessConfig struct {
+	Group  string
+	Role   types.Role
+	UserId string
 }
 
 func (c *StoreConfig) Rdbmsconfig() dq.RdbmsConfig {
@@ -65,7 +68,7 @@ func NewConfig(c *cli.Context) (Config, error) {
 
 	var storeCfg StoreConfig
 	var pathCfg PathConfig
-	var accessCfg model.Access
+	var accessCfg AccessConfig
 
 	// validate sql connection creds
 	if mode == types.Access || mode == types.Upload {
@@ -74,13 +77,7 @@ func NewConfig(c *cli.Context) (Config, error) {
 			return Config{}, errors.New("invalid sql connection string, --sqlConn should not be empty")
 		}
 		var user, pass, database, host, port string
-		// std lib regex doesn't support lookahead and lookbehind????????????????????????????????????????????????????????????????????????????????????????????????????????
-		// user = strings.ReplaceAll(regexp2.MustCompile(`(?<=user=).+?(?=\s)`, 0).FindString(sqlConn), " ", "")
-		// pass = strings.ReplaceAll(regexp2.MustCompile(`(?<=password=).+?(?=\s)`, 0).FindString(sqlConn), " ", "")
-		// name = strings.ReplaceAll(regexp2.MustCompile(`(?<=name=).+?(?=\s)`).FindString(sqlConn), " ", "")
-		// host = strings.ReplaceAll(regexp2.MustCompile(`(?<=host=).+?(?=\s)`).FindString(sqlConn), " ", "")
-		// port = strings.ReplaceAll(regexp2.MustCompile(`(?<=port=).+?(?=\s)`).FindString(sqlConn), " ", "")
-
+		// std lib regex doesn't support lookahead and lookbehind
 		var re *regexp2.Regexp
 		var m *regexp2.Match
 		var err error
@@ -157,19 +154,14 @@ func NewConfig(c *cli.Context) (Config, error) {
 		if group == "" {
 			return Config{}, errors.New("invalid group, --group must not be empty")
 		}
-		sDatasetId := c.String("datasetId")
-		if sDatasetId == "" {
-			return Config{}, errors.New("invalid datasetId, --datasetId must not be empty")
+		user := c.String("user")
+		if user == "" {
+			return Config{}, errors.New("invalid user id, --user must not be empty")
 		}
-		datasetId, err := suuid.FromString(sDatasetId)
-		gDatasetId, err := uuid.FromBytes(datasetId.Bytes())
-		if err != nil {
-			return Config{}, err
-		}
-		accessCfg = model.Access{
-			DatasetId: gDatasetId,
-			Group:     group,
-			Role:      role,
+		accessCfg = AccessConfig{
+			Group:  group,
+			Role:   role,
+			UserId: user,
 		}
 	}
 

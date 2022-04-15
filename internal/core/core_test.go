@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
 	"github.com/stretchr/testify/assert"
 )
 

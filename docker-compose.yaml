@@ -12,6 +12,7 @@ services:
       - seccomp:unconfined
     volumes:
       - .:/workspaces/shape-sql-loader
+      - ../xlscellreader:/workspaces/xlscellreader
     env_file:
       - .devcontainer/devcontainer.env
     working_dir: /workspaces/shape-sql-loader

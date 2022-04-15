@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/model"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	"github.com/usace/goquery"
 )
 

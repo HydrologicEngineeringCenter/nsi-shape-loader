@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/core"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/core"
 	"github.com/urfave/cli/v2"
 )
 

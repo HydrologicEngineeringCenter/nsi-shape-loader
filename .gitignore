@@ -1,3 +1,4 @@
 .devcontainer/
 test/
 metadata.xlsx
+./nsi-shape-loader

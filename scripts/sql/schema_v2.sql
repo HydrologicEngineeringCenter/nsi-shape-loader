@@ -56,6 +56,7 @@ create table dataset (
     purpose text,
     date_created date not null default current_date,
     created_by text not null,
+    group_id uuid not null,
     quality_id uuid not null,
     constraint fk_dataset_nsi_schema
         foreign key(nsi_schema_id)
@@ -63,6 +64,9 @@ create table dataset (
     constraint fk_dataset_quality
         foreign key(quality_id)
             references quality(id),
+    constraint fk_dataset_nsi_group
+        foreign key(group_id)
+            references nsi_group(id),
     unique(name, version, purpose, quality_id)
 );
 
