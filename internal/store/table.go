@@ -34,8 +34,9 @@ var datasetTable = goquery.TableDataSet{
             description,
             purpose,
             created_by,
-            quality_id
-        ) values ($1, $2, $3, $4, ST_Envelope('POLYGON((0 0, 0 0, 0 0, 0 0))'::geometry), $5, $6, $7, $8) returning id`,
+            quality_id,
+            group_id
+        ) values ($1, $2, $3, $4, ST_Envelope('POLYGON((0 0, 0 0, 0 0, 0 0))'::geometry), $5, $6, $7, $8, $9) returning id`,
 		"updateBBox":           `update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from {table_name}) where id=$1`,
 		"structureInInventory": `select fd_id from {table_name} where X=$1 and Y=$2`,
 	},
@@ -62,11 +63,22 @@ var fieldTable = goquery.TableDataSet{
 	Fields: model.Field{},
 }
 
+var groupTable = goquery.TableDataSet{
+	Name:   "access",
+	Schema: DbSchema,
+	Statements: map[string]string{
+		"selectId": `select id from nsi_group where name=$1`,
+		"insert":   `insert into nsi_group (name) values ($1) returning id`,
+	},
+	Fields: model.Group{},
+}
+
 var qualityTable = goquery.TableDataSet{
 	Name:   "quality",
 	Schema: DbSchema,
 	Statements: map[string]string{
 		"selectId": `select id from quality where value=$1`,
+		"select":   `select * from quality where value=$1`,
 		"insert":   `insert into quality (value, description) values ($1, $2) returning id`,
 	},
 	Fields: model.Quality{},

@@ -65,14 +65,24 @@ func (a MetaAccessor) GetSchema() (model.Schema, error) {
 	return schema, err
 }
 
+// GetShpDbFieldNameMap maps shp field name to db field name. A filter is applied
+// to keep only fields indicated in the xls
 func (a MetaAccessor) GetShpDbFieldNameMap() (map[string]string, error) {
-	var shp2DbName map[string]string // map field name from shp file to db table col name
+	shp2DbName := map[string]string{} // map field name from shp file to db table col name
 	var err error
-	fields := a.S.Fields()
-	for j, f := range fields {
-		shp2DbName[f.String()], err = a.X.GetString("field-domain", "D"+fmt.Sprint(j+2))
-		if err != nil {
-			return map[string]string{}, err
+	fieldsShape := a.S.Fields()
+	fieldsModel, err := a.GetFields()
+	if err != nil {
+		return map[string]string{}, err
+	}
+	for j, f := range fieldsModel {
+		if f.IsInDb {
+			fSName := fieldsShape[j].String()
+			fXName, err := a.X.GetString("field-domain", "F"+fmt.Sprint(j+2))
+			if err != nil {
+				return map[string]string{}, err
+			}
+			shp2DbName[fSName] = fXName
 		}
 	}
 	return shp2DbName, nil
@@ -86,7 +96,7 @@ func (a MetaAccessor) GetFields() ([]model.Field, error) {
 		if err != nil {
 			return []model.Field{}, err
 		}
-		isDomain, err := a.X.GetBool("field-domain", "E"+fmt.Sprint(j+2))
+		isDomain, err := a.X.GetBool("field-domain", "D"+fmt.Sprint(j+2))
 		if err != nil {
 			return []model.Field{}, err
 		}
@@ -104,6 +114,17 @@ func (a MetaAccessor) GetFields() ([]model.Field, error) {
 		fieldsModel = append(fieldsModel, field)
 	}
 	return fieldsModel, nil
+}
+
+func (a MetaAccessor) GetGroup() (model.Group, error) {
+	groupName, err := a.X.GetString("dataset", "C7")
+	if err != nil {
+		return model.Group{}, err
+	}
+	g := model.Group{
+		Name: groupName,
+	}
+	return g, nil
 }
 
 func (a MetaAccessor) GetDomainsForField(f model.Field) ([]model.Domain, error) {
@@ -127,7 +148,7 @@ func (a MetaAccessor) GetDomainsForField(f model.Field) ([]model.Domain, error) 
 	return domains, nil
 }
 
-func (a MetaAccessor) GetDataset(s *store.PSStore, schema model.Schema) (model.Dataset, error) {
+func (a MetaAccessor) GetDataset(s *store.PSStore, schema model.Schema, g model.Group) (model.Dataset, error) {
 	datasetName, err := a.X.GetString("dataset", "C1")
 	if err != nil {
 		return model.Dataset{}, err
@@ -159,6 +180,7 @@ func (a MetaAccessor) GetDataset(s *store.PSStore, schema model.Schema) (model.D
 		Description: datasetDescription,
 		Purpose:     datasetPurpose,
 		CreatedBy:   datasetCreatedBy,
+		GroupId:     g.Id,
 		QualityId:   q.Id,
 	}
 	return dataset, nil
@@ -172,7 +194,7 @@ func (a MetaAccessor) GetQuality(s *store.PSStore) (model.Quality, error) {
 	q := model.Quality{
 		Value: types.QualityReverse[qs],
 	}
-	err = s.GetQualityId(&q)
+	err = s.GetQuality(&q)
 	if err != nil {
 		return model.Quality{}, err
 	}
@@ -184,7 +206,7 @@ func (a MetaAccessor) GetSchemaFieldAssociation(s model.Schema, f model.Field) (
 	if err != nil {
 		return model.SchemaField{}, err
 	}
-	isPrivate, err := a.X.GetBool("field-domain", "B"+fmt.Sprint(fIdx+2))
+	isPrivate, err := a.X.GetBool("field-domain", "E"+fmt.Sprint(fIdx+2))
 	if err != nil {
 		return model.SchemaField{}, err
 	}

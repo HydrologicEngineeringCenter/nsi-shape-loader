@@ -116,6 +116,7 @@ type Dataset struct {
 	DateCreated time.Time `db:"date_created"`
 	CreatedBy   string    `db:"created_by"`
 	QualityId   uuid.UUID `db:"quality_id"`
+	GroupId     uuid.UUID `db:"group_id"`
 }
 
 type Group struct {

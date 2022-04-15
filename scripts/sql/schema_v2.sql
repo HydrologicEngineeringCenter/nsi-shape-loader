@@ -45,6 +45,12 @@ create table quality (
         check (value in ('high', 'med', 'low'))
 );
 
+create table nsi_group (
+    id uuid not null default gen_random_uuid() primary key,
+    name text not null,
+    unique(name)
+);
+
 create table dataset (
     id uuid not null default gen_random_uuid() primary key,
     name text not null,
@@ -68,12 +74,6 @@ create table dataset (
         foreign key(group_id)
             references nsi_group(id),
     unique(name, version, purpose, quality_id)
-);
-
-create table nsi_group (
-    id uuid not null default gen_random_uuid() primary key,
-    name text not null,
-    unique(name)
 );
 
 create table group_member (

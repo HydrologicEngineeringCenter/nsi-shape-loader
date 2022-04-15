@@ -196,33 +196,58 @@ func Upload(cfg config.Config) error {
 		}
 	}
 
-	////////////////////////////////////////
-	//  DATASET comes after the fields loop
-	//      Quality handling is implicit within the GetDataset call on metaAccessor
-	dataset, err := metaAccessor.GetDataset(st, s)
+	// quality
+	q, err := metaAccessor.GetQuality(st)
 	if err != nil {
 		return err
 	}
-	err = st.GetDataset(&dataset)
+	err = st.GetQuality(&q)
 	if err != nil {
 		return err
 	}
 
-	sqlArg := store.GenerateSqlArg(shp2DbName)
-	var datasetId uuid.UUID
-	if dataset.Id == uuid.Nil {
-		tableName := "inventory_" + strings.ReplaceAll(uuid.New().String(), "-", "_")
-		dataset.TableName = tableName
-		datasetId, err = st.AddDataset(dataset)
+	// group
+	g, err := metaAccessor.GetGroup()
+	if err != nil {
+		return err
+	}
+	err = st.GetGroupId(&g)
+	if err != nil {
+		return err
+	}
+	if g.Id == uuid.Nil {
+		err = st.AddGroup(&g)
 		if err != nil {
 			return err
 		}
-		dataset.Id = datasetId
+	}
+
+	// dataset
+	// quality handling is implicit within the GetDataset call on metaAccessor
+	d, err := metaAccessor.GetDataset(st, s, g)
+	if err != nil {
+		return err
+	}
+	err = st.GetDataset(&d)
+	if err != nil {
+		return err
+	}
+
+	sqlArg := store.GenerateSqlArg(shp2DbName, strings.TrimSuffix(
+		filepath.Base(cfg.ShpPath),
+		filepath.Ext(cfg.ShpPath),
+	))
+	if d.Id == uuid.Nil {
+		d.TableName = "inventory_" + strings.ReplaceAll(uuid.New().String(), "-", "_")
+		err = st.AddDataset(&d)
+		if err != nil {
+			return err
+		}
 		// create new table
-		log.Printf("Creating table=%s for dataset=%s", dataset.TableName, dataset.Name)
+		log.Printf("Creating table=%s for dataset=%s", d.TableName, d.Name)
 		execStr := fmt.Sprintf(`ogr2ogr -f "PostgreSQL" PG:"%s" %s -lco precision=no -lco fid=fd_id -lco geometry_name=shape -nln %s.%s %s`,
 			strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
-			cfg.ShpPath, store.DbSchema, dataset.TableName, sqlArg,
+			cfg.ShpPath, store.DbSchema, d.TableName, sqlArg,
 		)
 		fmt.Println(execStr)
 		_, err = exec.Command(
@@ -230,16 +255,17 @@ func Upload(cfg config.Config) error {
 		).Output()
 	} else {
 		// dataset already exists
-		flagDataInStore, err := st.ShpDataInStore(dataset, metaAccessor.S)
+		flagDataInStore, err := st.ShpDataInStore(d, metaAccessor.S)
 		if err != nil {
 			return err
 		}
 		if !flagDataInStore { // data has not yet been added to store
-			log.Printf("table=%s exists for dataset=%s. Appending rows...", dataset.TableName, dataset.Name)
+			log.Printf("table=%s exists for dataset=%s. Appending rows...", d.TableName, d.Name)
 			execStr := fmt.Sprintf(`ogr2ogr -append -update -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
 				strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
-				cfg.ShpPath, store.DbSchema, dataset.TableName,
+				cfg.ShpPath, store.DbSchema, d.TableName,
 			)
+			fmt.Println(execStr)
 			_, err = exec.Command(
 				"sh", "-c", execStr,
 			).Output()
@@ -250,11 +276,11 @@ func Upload(cfg config.Config) error {
 	if err != nil {
 		panic(err)
 	} else {
-		err = st.UpdateDatasetBBox(dataset)
+		err = st.UpdateDatasetBBox(d)
 		if err != nil {
 			return err
 		}
-		log.Printf("Data uploaded to dataset.name=%s dataset.id=%s", dataset.Name, dataset.Id)
+		log.Printf("Data uploaded to dataset.name=%s dataset.id=%s", d.Name, d.Id)
 	}
 	return err
 }
