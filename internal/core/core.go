@@ -21,6 +21,10 @@ import (
 )
 
 func Core(c *cli.Context) error {
+	log.Printf("\n\n")
+	log.Printf("============================================================")
+	log.Printf("=                       SEAHORSE                           =")
+	log.Printf("============================================================")
 	//  pre - generate config xls from shp
 	//  upload - upload based on data and metadata from xls and shp
 	//  access - change access group and role
@@ -117,13 +121,13 @@ func Upload(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Retrieving id for unique schema=%s version=%s\n", s.Name, s.Version)
+	// log.Printf("Retrieving id for unique schema=%s version=%s\n", s.Name, s.Version)
 	err = st.GetSchemaId(&s)
 	if err != nil {
 		return err
 	}
 	if s.Id == uuid.Nil {
-		log.Printf("schema=%s version=%s do not exists. Adding to schema table...\n", s.Name, s.Version)
+		// log.Printf("schema=%s version=%s do not exists. Adding to schema table...\n", s.Name, s.Version)
 		err = st.AddSchema(&s)
 		if err != nil {
 			return err
@@ -134,20 +138,15 @@ func Upload(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	shp2DbName, err := metaAccessor.GetShpDbFieldNameMap()
-	if err != nil {
-		return err
-	}
-
 	for _, f := range fields {
-		log.Printf("Retrieving id for unique field=%s type=%s\n", f.Name, f.Type)
+		// log.Printf("Retrieving id for unique field=%s type=%s\n", f.Name, f.Type)
 		err = st.GetFieldId(&f)
 		if err != nil {
 			return err
 		}
 		// If no id -> field is not in db -> add field + add association to schema + domain
 		if f.Id == uuid.Nil {
-			log.Printf("field=%s type=%s do not exists. Adding to field table...\n", f.Name, f.Type)
+			// log.Printf("field=%s type=%s do not exists. Adding to field table...\n", f.Name, f.Type)
 			err = st.AddField(&f)
 			if err != nil {
 				return err
@@ -157,7 +156,7 @@ func Upload(cfg config.Config) error {
 			// Process domain only if specified by field ie. field holds a discrete categorical variable
 			// Currently this is specified from the metadata xls, could be a TODO to automatically detect field based only on the shp file
 			if f.IsDomain {
-				log.Printf("field=%s holds discrete categorical variables. Adding to domain table...\n", f.Name)
+				// log.Printf("field=%s holds discrete categorical variables. Adding to domain table...\n", f.Name)
 				if err != nil {
 					return err
 				}
@@ -188,7 +187,7 @@ func Upload(cfg config.Config) error {
 			return err
 		}
 		if !flagAssociation {
-			log.Printf("Unable to find association between schema=%s and field=%s. Adding to schema_field table...\n", s.Name, f.Name)
+			// log.Printf("Unable to find association between schema=%s and field=%s. Adding to schema_field table...\n", s.Name, f.DbName)
 			err = st.AddSchemaFieldAssociation(sf)
 			if err != nil {
 				return err
@@ -232,12 +231,18 @@ func Upload(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-
+	// map field name from shp to what will be in postgis
+	shp2DbName, err := metaAccessor.GetShpDbFieldNameMap()
+	if err != nil {
+		return err
+	}
 	sqlArg := store.GenerateSqlArg(shp2DbName, strings.TrimSuffix(
 		filepath.Base(cfg.ShpPath),
 		filepath.Ext(cfg.ShpPath),
 	))
+	var execStr string
 	if d.Id == uuid.Nil {
+		// creating new dataset
 		d.TableName = "inventory_" + strings.ReplaceAll(uuid.New().String(), "-", "_")
 		err = st.AddDataset(&d)
 		if err != nil {
@@ -245,14 +250,10 @@ func Upload(cfg config.Config) error {
 		}
 		// create new table
 		log.Printf("Creating table=%s for dataset=%s", d.TableName, d.Name)
-		execStr := fmt.Sprintf(`ogr2ogr -f "PostgreSQL" PG:"%s" %s -lco precision=no -lco fid=fd_id -lco geometry_name=shape -nln %s.%s %s`,
+		execStr = fmt.Sprintf(`ogr2ogr -f "PostgreSQL" PG:"%s" %s -lco precision=no -lco fid=fd_id -lco geometry_name=shape -nln %s.%s %s`,
 			strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
 			cfg.ShpPath, store.DbSchema, d.TableName, sqlArg,
 		)
-		fmt.Println(execStr)
-		_, err = exec.Command(
-			"sh", "-c", execStr,
-		).Output()
 	} else {
 		// dataset already exists
 		flagDataInStore, err := st.ShpDataInStore(d, metaAccessor.S)
@@ -261,20 +262,19 @@ func Upload(cfg config.Config) error {
 		}
 		if !flagDataInStore { // data has not yet been added to store
 			log.Printf("table=%s exists for dataset=%s. Appending rows...", d.TableName, d.Name)
-			execStr := fmt.Sprintf(`ogr2ogr -append -update -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
+			execStr = fmt.Sprintf(`ogr2ogr -append -update -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
 				strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
 				cfg.ShpPath, store.DbSchema, d.TableName,
 			)
-			fmt.Println(execStr)
-			_, err = exec.Command(
-				"sh", "-c", execStr,
-			).Output()
 		} else {
-			return errors.New("shp file has already been uploaded")
+			return errors.New("Upload failed - shp file has already been uploaded")
 		}
 	}
+	fmt.Println(execStr)
+	_, err = exec.Command(
+		"sh", "-c", execStr,
+	).Output()
 	if err != nil {
-		panic(err)
 	} else {
 		err = st.UpdateDatasetBBox(d)
 		if err != nil {
