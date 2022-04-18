@@ -5,7 +5,8 @@ to the new NSIv2.6 database. PostGIS database instance must be accessible by the
 upload environment. The tool requires ogr2ogr and assets/metadataBase.xlsx.
 
 Database setup and cleanup SQL scripts are stored in scripts/sql/. All tables
-must be created inside the 'nsi' database schema.
+must be created inside the a specified database schema (changeable in
+internal/config/config.go)
 
 ```golang
     1. Generate metadata template using "--mode prep"
