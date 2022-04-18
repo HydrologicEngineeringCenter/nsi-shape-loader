@@ -15,7 +15,7 @@ internal/config/config.go)
     2. Fill in metadata xls file and upload with "--mode upload"
         go run . --mode upload --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15003.shp --xlsPath /workspaces/shape-sql-loader/metadatatest.xlsx --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 
-    3. Add access groups via "--mode access"
+    3. Add user to group via "--mode access"
         go run . --mode access --group nsidev --role admin --user user_id --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 
     Optional - To upload multiple shp files synchronously, use the included upload bash script
