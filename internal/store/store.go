@@ -62,6 +62,21 @@ func (st *PSStore) AddField(f *model.Field) error {
 	return nil
 }
 
+func (st *PSStore) AddMember(m *model.Member) error {
+	var mId uuid.UUID
+	err := st.DS.Select().
+		DataSet(&memberTable).
+		StatementKey("insert").
+		Params(m.GroupId, m.Role, m.UserId).
+		Dest(&mId).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	m.Id = mId
+	return nil
+}
+
 func (st *PSStore) AddSchemaFieldAssociation(sf model.SchemaField) error {
 	var schemaId uuid.UUID
 	err := st.DS.Select().
@@ -133,23 +148,6 @@ func (st *PSStore) AddGroup(g *model.Group) error {
 	return err
 }
 
-func (st *PSStore) AddQuality(q model.Quality) (uuid.UUID, error) {
-	var id uuid.UUID
-	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
-		err := st.DS.Select().
-			DataSet(&domainTable).
-			Tx(&tx).
-			StatementKey("insert").
-			Params(q.Value, q.Description).
-			Dest(&id).
-			Fetch()
-		if err != nil {
-			panic(err)
-		}
-	})
-	return id, err
-}
-
 func (st *PSStore) GetDomainId(d model.Domain) (uuid.UUID, error) {
 	var ids []uuid.UUID
 	err := st.DS.
@@ -186,6 +184,26 @@ func (st *PSStore) GetGroupId(g *model.Group) error {
 		return errors.New("more than 1 id exists for group.name=" + g.Name)
 	}
 	g.Id = ids[0]
+	return nil
+}
+
+func (st *PSStore) GetMemberId(m *model.Member) error {
+	var ids []uuid.UUID
+	err := st.DS.
+		Select(memberTable.Statements["selectId"]).
+		Params(m.GroupId, m.UserId).
+		Dest(&ids).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	if len(ids) > 1 {
+		return errors.New(fmt.Sprintf("more than 1 id exists for group_member.group_id=%s and group_member.user_id=%s", m.GroupId.String(), m.UserId))
+	}
+	m.Id = ids[0]
 	return nil
 }
 
@@ -399,4 +417,14 @@ func (st *PSStore) ShpDataInStore(d model.Dataset, s *shp.Reader) (bool, error) 
 		}
 	}
 	return false, nil
+}
+
+func (st *PSStore) UpdateMemberRole(m *model.Member) error {
+	var ids []interface{}
+	err := st.DS.
+		Select(memberTable.Statements["updateRole"]).
+		Params(m.Id, m.Role).
+		Dest(&ids). // interface doesn't work without a dest sink
+		Fetch()
+	return err
 }

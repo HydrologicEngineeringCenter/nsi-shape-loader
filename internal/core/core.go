@@ -12,6 +12,7 @@ import (
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/files"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/ingest"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	shape "github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/shp"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/store"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/types"
@@ -24,14 +25,14 @@ import (
 func Core(c *cli.Context) error {
 	log.Printf("\n\n")
 	log.Printf("============================================================")
-	log.Printf("=                       SEAHORSE                           =")
+	log.Printf("                     SEAHORSE %s                            ", config.APP_VERSION)
 	log.Printf("============================================================")
 	//  pre - generate config xls from shp
 	//  upload - upload based on data and metadata from xls and shp
 	//  access - change access group and role
 	cfg, err := config.NewConfig(c)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Prep mode generates the metadata xls required by Upload
@@ -45,6 +46,9 @@ func Core(c *cli.Context) error {
 	// Access mode change access permission of groups
 	if cfg.Mode == types.Access {
 		err = ChangeAccess(cfg)
+	}
+	if err != nil {
+		log.Fatal(err)
 	}
 	return err
 }
@@ -295,27 +299,42 @@ func Upload(cfg config.Config) error {
 }
 
 func ChangeAccess(cfg config.Config) error {
-	// st, err := store.NewStore(cfg)
-	// var accessId uuid.UUID
-	// group := model.Group{
-	// 	Id:   accessId,
-	// 	Name: "",
-	// }
-	// member := model.Member{
-	// 	DatasetId:  cfg.AccessConfig.DatasetId,
-	// 	Group:      cfg.AccessConfig.Group,
-	// 	Role:       cfg.AccessConfig.Role,
-	// 	Permission: types.RolePermission[cfg.AccessConfig.Role],
-	// }
-	// accessId, err = st.GetAccessId(access)
-	// if err != nil {
-	// 	return err
-	// }
-	// if accessId == uuid.Nil {
-	// 	_, err = st.AddAccess(access)
-	// }
-	// return err
-	return nil
+	st, err := store.NewStore(cfg)
+	if err != nil {
+		return err
+	}
+
+	// group
+	g := model.Group{
+		Name: cfg.AccessConfig.Group,
+	}
+	err = st.GetGroupId(&g)
+	if err != nil {
+		return err
+	}
+	if g.Id == uuid.Nil {
+		return errors.New(fmt.Sprintf("Changing access role failed - group.name=%s does not exists in the database", cfg.AccessConfig.Group))
+	}
+
+	// member
+	m := model.Member{
+		GroupId: g.Id,
+		Role:    cfg.AccessConfig.Role,
+		UserId:  cfg.AccessConfig.UserId,
+	}
+	err = st.GetMemberId(&m)
+	if err != nil {
+		return err
+	}
+	if m.Id == uuid.Nil {
+		// user has no association to the group
+		err = st.AddMember(&m)
+	} else {
+		// user association exists
+		err = st.UpdateMemberRole(&m)
+	}
+	log.Printf("member.user_id=%s now exists as member.role=%s for group.name=%s", m.UserId, m.Role, g.Name)
+	return err
 }
 
 func AddElevation(cfg config.Config) error {

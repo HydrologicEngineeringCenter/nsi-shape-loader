@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/core"
 	"github.com/urfave/cli/v2"
 )
@@ -12,9 +13,10 @@ import (
 func main() {
 
 	app := &cli.App{
-		Name:   "nsi-loader",
-		Usage:  "upload nsi shapefile to postgis database",
-		Action: core.Core,
+		Name:    "nsi-loader",
+		Version: config.APP_VERSION,
+		Usage:   "upload nsi shapefile to postgis database",
+		Action:  core.Core,
 		Flags: []cli.Flag{
 
 			&cli.StringFlag{
@@ -54,8 +56,8 @@ func main() {
 
 			// access mode
 			&cli.StringFlag{
-				Name:    "datasetId",
-				Aliases: []string{"i"},
+				Name:    "user",
+				Aliases: []string{"u"},
 				Usage:   "",
 			},
 			&cli.StringFlag{

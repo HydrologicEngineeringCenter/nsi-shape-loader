@@ -75,6 +75,17 @@ var groupTable = goquery.TableDataSet{
 	Fields: model.Group{},
 }
 
+var memberTable = goquery.TableDataSet{
+	Name:   "group_member",
+	Schema: DbSchema,
+	Statements: map[string]string{
+		"selectId":   `select id from group_member where group_id=$1 and user_id=$2`,
+		"insert":     `insert into group_member (group_id, role, user_id) values ($1, $2, $3) returning id`,
+		"updateRole": `update group_member set role=$2 where id=$1`,
+	},
+	Fields: model.Group{},
+}
+
 var qualityTable = goquery.TableDataSet{
 	Name:   "quality",
 	Schema: DbSchema,

@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	APP_VERSION         = "0.5.0"
 	BASE_META_XLSX_PATH = "./assets/baseMetaData.xlsx"
 	COPY_XLSX_PATH      = "./metadata.xlsx"
 	DB_SCHEMA           = "nsi"

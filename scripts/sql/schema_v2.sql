@@ -76,6 +76,7 @@ create table dataset (
     unique(name, version, purpose, quality_id)
 );
 
+-- a member can be in multiple groups
 create table group_member (
     id uuid not null default gen_random_uuid() primary key,
     group_id uuid not null,
@@ -84,7 +85,7 @@ create table group_member (
     constraint fk_access_dataset
         foreign key(group_id)
             references nsi_group(id),
-    unique(user_id)
+    unique(user_id, group_id)
 );
 
 insert into quality (value, description)
