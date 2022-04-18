@@ -6,10 +6,10 @@ type Datatype string
 
 // Field type uses mapping from go-shp
 const (
-	Char   Datatype = "C"
-	Number          = "N"
-	Float           = "F"
-	Date            = "D"
+	Char   Datatype = "text"
+	Number          = "numeric"
+	Float           = "float"
+	Date            = "date"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 		"F": Float,
 		"D": Date,
 	}
-	datatypeReadable = map[Datatype]string{
+	DatatypeReadable = map[Datatype]string{
 		Char:   "text",
 		Number: "numeric",
 		Float:  "float",
@@ -28,7 +28,7 @@ var (
 )
 
 func (t Datatype) String() string {
-	return datatypeReadable[t]
+	return DatatypeReadable[t]
 }
 
 type Quality string

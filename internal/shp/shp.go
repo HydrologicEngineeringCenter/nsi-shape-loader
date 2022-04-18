@@ -47,3 +47,14 @@ func FieldIdx(shpF *shp.Reader, fs string) (int, error) {
 	}
 	return -1, errors.New(fmt.Sprintf("shp file does not contain field=%s", fs))
 }
+
+// Field returns the shp.Field obj based on index
+func Field(shpF *shp.Reader, idx int) (shp.Field, error) {
+	fields := shpF.Fields()
+	for i, f := range fields {
+		if i == idx {
+			return f, nil
+		}
+	}
+	return shp.Field{}, errors.New(fmt.Sprintf("shp file does not contain field at index=%d", idx))
+}

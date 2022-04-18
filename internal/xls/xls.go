@@ -1,15 +1,22 @@
 package xls
 
-import "github.com/xuri/excelize/v2"
+import (
+	"github.com/usace/xlscellreader"
+	"github.com/xuri/excelize/v2"
+)
 
-func NewXls(src string) (*excelize.File, error) {
-	file, err := excelize.OpenFile(src)
+func NewXls(src string) (*xlscellreader.CellReader, error) {
+	f, err := excelize.OpenFile(src)
 	if err != nil {
-		return &excelize.File{}, err
+		return &xlscellreader.CellReader{}, err
 	}
 	defer func() {
 		// Close the spreadsheet.
-		err = file.Close()
+		err = f.Close()
 	}()
-	return file, err
+	reader := xlscellreader.CellReader{F: f}
+	if err != nil {
+		return &xlscellreader.CellReader{}, err
+	}
+	return &reader, err
 }

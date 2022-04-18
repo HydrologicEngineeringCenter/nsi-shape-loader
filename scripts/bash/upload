@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# debugging
+# set -x
+
 # Upload multiple shape file using "upload" --mode
-while getopts d:s:c:t: flag
+while getopts d:s:x: flag
 do
     case "$flag" in
         d) directory=${OPTARG};;
@@ -13,10 +16,16 @@ done
 suffix="shp"
 
 upload() {
-    list=$(find $directory -type f -name "*.$suffix")
+    list=$(find $directory -type f -name "*.$suffix" -print | sort )
+    declare -i i=1
+    len=$(find $directory -type f -name "*.$suffix" | wc -l)
     for file in $list
     do
-        go run . --mode upload --sql $sqlCred --xlsPath $xlsPath --shpPath $file
+        printf "\n\n"
+        echo "Uploading $i/$len - $file"
+        declare -a cmd=("go run . --mode upload --sqlConn \"$sqlCred\" --xlsPath $xlsPath --shpPath $file")
+        eval $cmd
+        i=$(($i+1))
     done
 }
 

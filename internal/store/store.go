@@ -7,9 +7,9 @@ import (
 	"math/rand"
 	"strings"
 
-	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/config"
-	"github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/model"
-	shape "github.com/HydrologicEngineeringCenter/nsi-shape-loader/internal/shp"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
+	shape "github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/shp"
 	"github.com/google/uuid"
 	"github.com/jonas-p/go-shp"
 	"github.com/usace/goquery"
@@ -23,7 +23,7 @@ func NewStore(c config.Config) (*PSStore, error) {
 	dbconf := c.Rdbmsconfig()
 	ds, err := goquery.NewRdbmsDataStore(&dbconf)
 	if err != nil {
-		log.Printf("Unable to connect to database during startup: %s", err)
+		log.Fatal("Unable to connect to database during startup: %s", err)
 	} else {
 		log.Printf("Connected as %s to database %s:%s/%s", c.Dbuser, c.Dbhost, c.Dbport, c.Dbname)
 	}
@@ -32,78 +32,86 @@ func NewStore(c config.Config) (*PSStore, error) {
 	return &st, nil
 }
 
-func (st *PSStore) AddDomain(d model.Domain) (uuid.UUID, error) {
+func (st *PSStore) AddDomain(d *model.Domain) error {
 	var dId uuid.UUID
-	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
-		err := st.DS.Select().
-			DataSet(&domainTable).
-			Tx(&tx).
-			StatementKey("insert").
-			Params(d.FieldId, d.Value).
-			Dest(&dId).
-			Fetch()
-		if err != nil {
-			panic(err)
-		}
-	})
-	return dId, err
+	err := st.DS.Select().
+		DataSet(&domainTable).
+		StatementKey("insert").
+		Params(d.FieldId, d.Value).
+		Dest(&dId).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	d.Id = dId
+	return nil
 }
 
-func (st *PSStore) AddField(f model.Field) (uuid.UUID, error) {
+func (st *PSStore) AddField(f *model.Field) error {
 	var fId uuid.UUID
-	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
-		err := st.DS.Select().
-			DataSet(&fieldTable).
-			Tx(&tx).
-			StatementKey("insert").
-			Params(f.Name, f.Type, f.Description, f.IsDomain).
-			Dest(&fId).
-			Fetch()
-		if err != nil {
-			panic(err)
-		}
-	})
-	return fId, err
+	err := st.DS.Select().
+		DataSet(&fieldTable).
+		StatementKey("insert").
+		Params(f.DbName, f.Type, f.Description, f.IsDomain).
+		Dest(&fId).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	f.Id = fId
+	return nil
 }
 
-func (st *PSStore) AddSchemaFieldAssociation(sf model.SchemaField) (uuid.UUID, error) {
+func (st *PSStore) AddMember(m *model.Member) error {
+	var mId uuid.UUID
+	err := st.DS.Select().
+		DataSet(&memberTable).
+		StatementKey("insert").
+		Params(m.GroupId, m.Role, m.UserId).
+		Dest(&mId).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	m.Id = mId
+	return nil
+}
+
+func (st *PSStore) AddSchemaFieldAssociation(sf model.SchemaField) error {
 	var schemaId uuid.UUID
-	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
-		err := st.DS.Select().
-			DataSet(&schemaFieldTable).
-			Tx(&tx).
-			StatementKey("insert").
-			Params(sf.Id, sf.NsiFieldId, sf.IsPrivate).
-			Dest(&schemaId).
-			Fetch()
-		if err != nil {
-			panic(err)
-		}
-	})
-	return schemaId, err
+	err := st.DS.Select().
+		DataSet(&schemaFieldTable).
+		StatementKey("insert").
+		Params(sf.Id, sf.NsiFieldId, sf.IsPrivate).
+		Dest(&schemaId).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (st *PSStore) AddSchema(schema model.Schema) (uuid.UUID, error) {
+func (st *PSStore) AddSchema(schema *model.Schema) error {
 	var schemaId uuid.UUID
-	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
-		err := st.DS.Select().
-			DataSet(&schemaTable).
-			Tx(&tx).
-			StatementKey("insert").
-			Params(schema.Name, schema.Version, schema.Notes).
-			Dest(&schemaId).
-			Fetch()
-		if err != nil {
-			panic(err)
-		}
-	})
-	return schemaId, err
+	err := st.DS.Select().
+		DataSet(&schemaTable).
+		StatementKey("insert").
+		Params(schema.Name, schema.Version, schema.Notes).
+		Dest(&schemaId).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	schema.Id = schemaId
+	return err
 }
 
-func (st *PSStore) AddDataset(d model.Dataset) (uuid.UUID, error) {
+func (st *PSStore) AddDataset(d *model.Dataset) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(datasetTable.Statements["insertNullShape"]).
+		Select().
+		DataSet(&datasetTable).
+		StatementKey("insertNullShape").
 		Params(
 			d.Name,
 			d.Version,
@@ -113,53 +121,38 @@ func (st *PSStore) AddDataset(d model.Dataset) (uuid.UUID, error) {
 			d.Purpose,
 			d.CreatedBy,
 			d.QualityId,
+			d.GroupId,
 		).
 		Dest(&ids).
 		Fetch()
 	if err != nil {
-		panic(err)
+		return err
 	}
-	return ids[0], err
+	d.Id = ids[0]
+	return err
 }
 
-func (st *PSStore) AddAccess(a model.Access) (uuid.UUID, error) {
+func (st *PSStore) AddGroup(g *model.Group) error {
 	var id uuid.UUID
-	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
-		err := st.DS.Select().
-			DataSet(&accessTable).
-			Tx(&tx).
-			StatementKey("insert").
-			Params(a.DatasetId, a.Group, a.Role, a.Permission).
-			Dest(&id).
-			Fetch()
-		if err != nil {
-			panic(err)
-		}
-	})
-	return id, err
-}
-
-func (st *PSStore) AddQuality(q model.Quality) (uuid.UUID, error) {
-	var id uuid.UUID
-	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
-		err := st.DS.Select().
-			DataSet(&domainTable).
-			Tx(&tx).
-			StatementKey("insert").
-			Params(q.Value, q.Description).
-			Dest(&id).
-			Fetch()
-		if err != nil {
-			panic(err)
-		}
-	})
-	return id, err
+	err := st.DS.Select().
+		DataSet(&groupTable).
+		StatementKey("insert").
+		Params(g.Name).
+		Dest(&id).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	g.Id = id
+	return err
 }
 
 func (st *PSStore) GetDomainId(d model.Domain) (uuid.UUID, error) {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(schemaTable.Statements["selectId"]).
+		Select().
+		DataSet(&schemaTable).
+		StatementKey("selectId").
 		Params(d.FieldId, d.Value).
 		Dest(&ids).
 		Fetch()
@@ -175,40 +168,67 @@ func (st *PSStore) GetDomainId(d model.Domain) (uuid.UUID, error) {
 	return ids[0], err
 }
 
-func (st *PSStore) GetAccessId(a model.Access) (uuid.UUID, error) {
+func (st *PSStore) GetGroupId(g *model.Group) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(schemaTable.Statements["selectId"]).
-		Params(a.DatasetId, a.Group).
+		Select().
+		DataSet(&groupTable).
+		StatementKey("selectId").
+		Params(g.Name).
 		Dest(&ids).
 		Fetch()
 	if err != nil {
-		return uuid.UUID{}, err
+		return err
 	}
 	if len(ids) == 0 {
-		return uuid.UUID{}, nil
+		return nil
 	}
 	if len(ids) > 1 {
-		return uuid.UUID{}, errors.New("more than 1 id exists for access.dataset_id=" + a.DatasetId.String() + " and access.access_group=" + a.Group)
+		return errors.New("more than 1 id exists for group.name=" + g.Name)
 	}
-	return ids[0], err
+	g.Id = ids[0]
+	return nil
 }
 
-func (st *PSStore) GetDatasetId(d model.Dataset) (uuid.UUID, error) {
+func (st *PSStore) GetMemberId(m *model.Member) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(datasetTable.Statements["selectId"]).
+		Select().
+		DataSet(&memberTable).
+		StatementKey("selectId").
+		Params(m.GroupId, m.UserId).
+		Dest(&ids).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	if len(ids) > 1 {
+		return errors.New(fmt.Sprintf("more than 1 id exists for group_member.group_id=%s and group_member.user_id=%s", m.GroupId.String(), m.UserId))
+	}
+	m.Id = ids[0]
+	return nil
+}
+
+func (st *PSStore) GetDatasetId(d *model.Dataset) error {
+	var ids []uuid.UUID
+	err := st.DS.
+		Select().
+		DataSet(&datasetTable).
+		StatementKey("selectId").
 		Params(d.Name, d.Version, d.Purpose, d.QualityId).
 		Dest(&ids).
 		Fetch()
 	if err != nil {
-		return uuid.UUID{}, err
+		return err
 	}
 	if len(ids) == 0 {
-		return uuid.UUID{}, nil
+		return nil
 	}
 	if len(ids) > 1 {
-		return uuid.UUID{}, errors.New(fmt.Sprintf(`more than 1 id exists for
+		return errors.New(fmt.Sprintf(`more than 1 id exists for
         dataset.name=%s
         dataset.version=%s
         dataset.shape=%s
@@ -221,14 +241,17 @@ func (st *PSStore) GetDatasetId(d model.Dataset) (uuid.UUID, error) {
 			d.QualityId,
 		))
 	}
-	return ids[0], err
+	d.Id = ids[0]
+	return err
 }
 
 // GetDataset queries based on its Name, Version, Purpose, and QualityId
 func (st *PSStore) GetDataset(d *model.Dataset) error {
 	var ds []model.Dataset
 	err := st.DS.
-		Select(datasetTable.Statements["select"]).
+		Select().
+		DataSet(&datasetTable).
+		StatementKey("select").
 		Params(d.Name, d.Version, d.Purpose, d.QualityId).
 		Dest(&ds).
 		Fetch()
@@ -236,79 +259,94 @@ func (st *PSStore) GetDataset(d *model.Dataset) error {
 		return err
 	}
 	if len(ds) == 0 {
-		return nil
+		d.Id = uuid.Nil
+	} else {
+		*d = ds[0]
 	}
-	if len(ds) > 1 {
-		return errors.New(fmt.Sprintf(`more than 1 dataset exists for
-        dataset.name=%s
-        dataset.version=%s
-        dataset.purpose=%s
-        dataset.quality_id=%s`,
-			d.Name,
-			d.Version,
-			d.Purpose,
-			d.QualityId,
-		))
-	}
-	// replace data at location referenced by pointer
-	*d = ds[0]
-	return err
+	return nil
 }
 
-func (st *PSStore) GetFieldId(f model.Field) (uuid.UUID, error) {
+func (st *PSStore) GetFieldId(f *model.Field) error {
 	var ids []uuid.UUID
 	err := st.DS.
 		Select().
 		DataSet(&fieldTable).
 		StatementKey("select").
-		Params(f.Name).
+		Params(f.DbName).
 		Dest(&ids).
 		Fetch()
 	if len(ids) == 0 {
-		return uuid.UUID{}, err
+		f.Id = uuid.Nil
+		return err
 	}
 	if len(ids) > 1 {
-		return uuid.UUID{}, errors.New("more than 1 id exists for field.name=" + f.Name + " and field.type=" + string(f.Type))
+		return errors.New("more than 1 id exists for field.name=" + f.DbName + " and field.type=" + string(f.Type))
 	}
-	return ids[0], err
+	f.Id = ids[0]
+	return err
 }
 
-func (st *PSStore) GetSchemaId(s model.Schema) (uuid.UUID, error) {
+// GetSchemaId queries the database based on the supplied schema name and version.
+// Replaces Id field if a corresponding entry exists, otherwise change Id field to uuid.Nil
+func (st *PSStore) GetSchemaId(s *model.Schema) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(schemaTable.Statements["selectId"]).
+		Select().
+		DataSet(&schemaTable).
+		StatementKey("selectId").
 		Params(s.Name, s.Version).
 		Dest(&ids).
 		Fetch()
 	if err != nil {
-		return uuid.UUID{}, err
+		return err
 	}
 	if len(ids) == 0 {
-		return uuid.UUID{}, nil
+		s.Id = uuid.Nil
+		return nil
 	}
 	if len(ids) > 1 {
-		return uuid.UUID{}, errors.New("more than 1 id exists for schema.name=" + s.Name + " and schema.version=" + s.Version)
+		return errors.New("more than 1 id exists for schema.name=" + s.Name + " and schema.version=" + s.Version)
 	}
-	return ids[0], err
+	s.Id = ids[0]
+	return nil
 }
 
-func (st *PSStore) GetQualityId(q model.Quality) (uuid.UUID, error) {
+func (st *PSStore) GetQuality(q *model.Quality) error {
+	var qDb model.Quality
+	err := st.DS.
+		Select().
+		DataSet(&qualityTable).
+		StatementKey("select").
+		Params(q.Value).
+		Dest(&qDb).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	*q = qDb
+	return nil
+}
+
+func (st *PSStore) GetQualityId(q *model.Quality) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(qualityTable.Statements["selectId"]).
+		Select().
+		DataSet(&qualityTable).
+		StatementKey("selectId").
 		Params(q.Value).
 		Dest(&ids).
 		Fetch()
 	if err != nil {
-		return uuid.UUID{}, err
+		return err
 	}
 	if len(ids) == 0 {
-		return uuid.UUID{}, nil
+		return nil
 	}
 	if len(ids) > 1 {
-		return uuid.UUID{}, errors.New("more than 1 id exists for quality.value=" + string(q.Value))
+		return errors.New("more than 1 id exists for quality.value=" + string(q.Value))
 	}
-	return ids[0], err
+	q.Id = ids[0]
+	return nil
 }
 
 // Check if table exists in database
@@ -339,7 +377,7 @@ func (st *PSStore) SchemaFieldAssociationExists(sf model.SchemaField) (bool, err
 		Dest(&ids).
 		Fetch()
 	if err != nil {
-		panic(err)
+		return false, err
 	}
 	if len(ids) > 0 {
 		result = true
@@ -394,4 +432,16 @@ func (st *PSStore) ShpDataInStore(d model.Dataset, s *shp.Reader) (bool, error) 
 		}
 	}
 	return false, nil
+}
+
+func (st *PSStore) UpdateMemberRole(m *model.Member) error {
+	var ids []interface{}
+	err := st.DS.
+		Select().
+		DataSet(&memberTable).
+		StatementKey("updateRole").
+		Params(m.Id, m.Role).
+		Dest(&ids). // interface doesn't work without a dest sink
+		Fetch()
+	return err
 }

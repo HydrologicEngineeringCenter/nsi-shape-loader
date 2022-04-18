@@ -1,3 +1,7 @@
 .devcontainer/
 test/
 metadata.xlsx
+./nsi-shape-loader
+assets/baseMetadata-backup.xlsx
+metadatatest-backup.xlsx
+metadatatest.xlsx
