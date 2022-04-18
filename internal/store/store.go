@@ -23,7 +23,7 @@ func NewStore(c config.Config) (*PSStore, error) {
 	dbconf := c.Rdbmsconfig()
 	ds, err := goquery.NewRdbmsDataStore(&dbconf)
 	if err != nil {
-		log.Printf("Unable to connect to database during startup: %s", err)
+		log.Fatal("Unable to connect to database during startup: %s", err)
 	} else {
 		log.Printf("Connected as %s to database %s:%s/%s", c.Dbuser, c.Dbhost, c.Dbport, c.Dbname)
 	}
@@ -100,7 +100,7 @@ func (st *PSStore) AddSchema(schema *model.Schema) error {
 		Dest(&schemaId).
 		Fetch()
 	if err != nil {
-		panic(err)
+		return err
 	}
 	schema.Id = schemaId
 	return err
@@ -377,7 +377,7 @@ func (st *PSStore) SchemaFieldAssociationExists(sf model.SchemaField) (bool, err
 		Dest(&ids).
 		Fetch()
 	if err != nil {
-		panic(err)
+		return false, err
 	}
 	if len(ids) > 0 {
 		result = true
