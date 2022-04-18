@@ -104,8 +104,17 @@ func (a MetaAccessor) GetFields() ([]model.Field, error) {
 		if err != nil {
 			return []model.Field{}, err
 		}
+		shpName, err := a.X.GetString("field-domain", "B"+fmt.Sprint(j+2))
+		if err != nil {
+			return []model.Field{}, err
+		}
+		dbName, err := a.X.GetString("field-domain", "F"+fmt.Sprint(j+2))
+		if err != nil {
+			return []model.Field{}, err
+		}
 		field := model.Field{
-			Name:        f.String(),
+			ShpName:     shpName,
+			DbName:      dbName,
 			Type:        types.DatatypeReverse[string(f.Fieldtype)],
 			Description: fieldDescription,
 			IsDomain:    isDomain,
@@ -128,7 +137,7 @@ func (a MetaAccessor) GetGroup() (model.Group, error) {
 }
 
 func (a MetaAccessor) GetDomainsForField(f model.Field) ([]model.Domain, error) {
-	idx, err := shape.FieldIdx(a.S, f.Name)
+	idx, err := shape.FieldIdx(a.S, f.ShpName)
 	if err != nil {
 		return []model.Domain{}, err
 	}
@@ -202,7 +211,7 @@ func (a MetaAccessor) GetQuality(s *store.PSStore) (model.Quality, error) {
 }
 
 func (a MetaAccessor) GetSchemaFieldAssociation(s model.Schema, f model.Field) (model.SchemaField, error) {
-	fIdx, err := shape.FieldIdx(a.S, f.Name)
+	fIdx, err := shape.FieldIdx(a.S, f.ShpName)
 	if err != nil {
 		return model.SchemaField{}, err
 	}

@@ -78,7 +78,8 @@ type Domain struct {
 
 type Field struct {
 	Id          uuid.UUID      `db:"id"`
-	Name        string         `db:"name"`
+	ShpName     string         // field name from shapefile
+	DbName      string         `db:"name"`
 	Type        types.Datatype `db:"type"`
 	Description string         `db:"description"`
 	IsDomain    bool           `db:"is_domain"`

@@ -52,7 +52,7 @@ func (st *PSStore) AddField(f *model.Field) error {
 	err := st.DS.Select().
 		DataSet(&fieldTable).
 		StatementKey("insert").
-		Params(f.Name, f.Type, f.Description, f.IsDomain).
+		Params(f.DbName, f.Type, f.Description, f.IsDomain).
 		Dest(&fId).
 		Fetch()
 	if err != nil {
@@ -245,7 +245,7 @@ func (st *PSStore) GetFieldId(f *model.Field) error {
 		Select().
 		DataSet(&fieldTable).
 		StatementKey("select").
-		Params(f.Name).
+		Params(f.DbName).
 		Dest(&ids).
 		Fetch()
 	if len(ids) == 0 {
@@ -253,7 +253,7 @@ func (st *PSStore) GetFieldId(f *model.Field) error {
 		return err
 	}
 	if len(ids) > 1 {
-		return errors.New("more than 1 id exists for field.name=" + f.Name + " and field.type=" + string(f.Type))
+		return errors.New("more than 1 id exists for field.name=" + f.DbName + " and field.type=" + string(f.Type))
 	}
 	f.Id = ids[0]
 	return err
