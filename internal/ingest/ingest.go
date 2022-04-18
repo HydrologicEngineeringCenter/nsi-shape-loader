@@ -112,15 +112,17 @@ func (a MetaAccessor) GetFields() ([]model.Field, error) {
 		if err != nil {
 			return []model.Field{}, err
 		}
-		field := model.Field{
-			ShpName:     shpName,
-			DbName:      dbName,
-			Type:        types.DatatypeReverse[string(f.Fieldtype)],
-			Description: fieldDescription,
-			IsDomain:    isDomain,
-			IsInDb:      isInDb,
+		if isInDb {
+			field := model.Field{
+				ShpName:     shpName,
+				DbName:      dbName,
+				Type:        types.DatatypeReverse[string(f.Fieldtype)],
+				Description: fieldDescription,
+				IsDomain:    isDomain,
+				IsInDb:      isInDb,
+			}
+			fieldsModel = append(fieldsModel, field)
 		}
-		fieldsModel = append(fieldsModel, field)
 	}
 	return fieldsModel, nil
 }
