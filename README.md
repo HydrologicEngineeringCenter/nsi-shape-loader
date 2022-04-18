@@ -1,11 +1,11 @@
 # shape-sql-loader
 
 shape-sql-loader is intended to be a sysadmin tool to upload a set of shp files
-to the new NSIv2.6 database. PostGIS database instance must be accessible by the
+to the new NSI database. PostGIS database instance must be accessible by the
 upload environment. The tool requires ogr2ogr and assets/metadataBase.xlsx.
 
 Database setup and cleanup SQL scripts are stored in scripts/sql/. All tables
-must be created inside the a specified database schema (changeable in
+must be created inside a specified database schema (changeable in
 internal/config/config.go)
 
 ```golang
