@@ -18,6 +18,7 @@ import (
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/xls"
 	"github.com/google/uuid"
 	"github.com/urfave/cli/v2"
+	"github.com/xuri/excelize/v2"
 )
 
 func Core(c *cli.Context) error {
@@ -52,8 +53,8 @@ func Core(c *cli.Context) error {
 func Prep(cfg config.Config) error {
 
 	// copy xls file
-	const baseXlsSrc = "./assets/baseMetadata.xlsx"
-	const cpXlsDest = "./metadata.xlsx"
+	const baseXlsSrc = config.BaseMetaXlsPath
+	const cpXlsDest = config.FilledMetaXlsPath
 	err := files.Copy(baseXlsSrc, cpXlsDest)
 	if err != nil {
 		return err
@@ -72,14 +73,22 @@ func Prep(cfg config.Config) error {
 	for j, f := range fields {
 		loc = "B" + fmt.Sprint(j+2)
 		val = f.String()
-		err = xlsF.F.SetCellValue("field-domain", loc, val)
+		err = xlsF.F.SetCellRichText("field-domain", loc, []excelize.RichTextRun{
+			{
+				Text: val,
+				Font: &excelize.Font{
+					Bold:  false,
+					Color: "FF0000",
+				},
+			},
+		})
 		if err != nil {
 			return err
 		}
 	}
 	xlsF.F.Save()
 	wd, err := os.Getwd()
-	fmt.Println("Metadata template file successfully created at:", filepath.Join(wd, cpXlsDest))
+	log.Println("Metadata template file successfully created at:", filepath.Join(wd, cpXlsDest))
 	return err
 }
 
@@ -270,7 +279,7 @@ func Upload(cfg config.Config) error {
 			return errors.New("Upload failed - shp file has already been uploaded")
 		}
 	}
-	fmt.Println(execStr)
+	// fmt.Println(execStr)
 	_, err = exec.Command(
 		"sh", "-c", execStr,
 	).Output()

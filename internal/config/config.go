@@ -11,6 +11,11 @@ import (
 	dq "github.com/usace/goquery"
 )
 
+const (
+	BaseMetaXlsPath   = "./assets/baseMetaData.xlsx"
+	FilledMetaXlsPath = "./metadata.xlsx"
+)
+
 // Config is for the general app
 type Config struct {
 	Mode types.Mode

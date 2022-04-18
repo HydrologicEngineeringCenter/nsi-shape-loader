@@ -20,7 +20,7 @@
                 "--xlsPath",
                 "/workspaces/shape-sql-loader/metadatatest.xlsx",
                 "--shpPath",
-                "/workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15003.shp"
+                "/workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15007.shp"
             ]
         },
         {
