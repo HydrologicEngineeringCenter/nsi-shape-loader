@@ -1,6 +1,8 @@
 package store
 
 import (
+	"fmt"
+
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	"github.com/usace/goquery"
@@ -39,8 +41,8 @@ var datasetTable = goquery.TableDataSet{
             quality_id,
             group_id
         ) values ($1, $2, $3, $4, ST_Envelope('POLYGON((0 0, 0 0, 0 0, 0 0))'::geometry), $5, $6, $7, $8, $9) returning id`,
-		"updateBBox":           `update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from {table_name}) where id=$1`,
-		"structureInInventory": `select fd_id from {table_name} where X=$1 and Y=$2`,
+		"updateBBox":           fmt.Sprintf(`update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from %s.{table_name}) where id=$1`, DbSchema),
+		"structureInInventory": fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
 	},
 }
 

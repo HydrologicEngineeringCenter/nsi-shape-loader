@@ -1,4 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS nsi;
+CREATE SCHEMA IF NOT EXISTS nsiv29;
 CREATE extension postgis;
 
 UPDATE pg_extension
@@ -6,7 +6,7 @@ UPDATE pg_extension
     WHERE extname = 'postgis';
 
 ALTER EXTENSION postgis
-  SET SCHEMA nsi;
+  SET SCHEMA nsiv29;
 
 ALTER EXTENSION postgis
   UPDATE TO "2.5.2next";
@@ -14,4 +14,5 @@ ALTER EXTENSION postgis
 ALTER EXTENSION postgis
   UPDATE TO "2.5.2";
 
-SET search_path TO nsi;
+ALTER ROLE dbuser SET search_path = nsiv29;
+

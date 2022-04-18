@@ -93,18 +93,15 @@ func (st *PSStore) AddSchemaFieldAssociation(sf model.SchemaField) error {
 
 func (st *PSStore) AddSchema(schema *model.Schema) error {
 	var schemaId uuid.UUID
-	err := goquery.Transaction(st.DS, func(tx goquery.Tx) {
-		err := st.DS.Select().
-			DataSet(&schemaTable).
-			Tx(&tx).
-			StatementKey("insert").
-			Params(schema.Name, schema.Version, schema.Notes).
-			Dest(&schemaId).
-			Fetch()
-		if err != nil {
-			panic(err)
-		}
-	})
+	err := st.DS.Select().
+		DataSet(&schemaTable).
+		StatementKey("insert").
+		Params(schema.Name, schema.Version, schema.Notes).
+		Dest(&schemaId).
+		Fetch()
+	if err != nil {
+		panic(err)
+	}
 	schema.Id = schemaId
 	return err
 }
@@ -112,7 +109,9 @@ func (st *PSStore) AddSchema(schema *model.Schema) error {
 func (st *PSStore) AddDataset(d *model.Dataset) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(datasetTable.Statements["insertNullShape"]).
+		Select().
+		DataSet(&datasetTable).
+		StatementKey("insertNullShape").
 		Params(
 			d.Name,
 			d.Version,
@@ -151,7 +150,9 @@ func (st *PSStore) AddGroup(g *model.Group) error {
 func (st *PSStore) GetDomainId(d model.Domain) (uuid.UUID, error) {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(schemaTable.Statements["selectId"]).
+		Select().
+		DataSet(&schemaTable).
+		StatementKey("selectId").
 		Params(d.FieldId, d.Value).
 		Dest(&ids).
 		Fetch()
@@ -170,7 +171,9 @@ func (st *PSStore) GetDomainId(d model.Domain) (uuid.UUID, error) {
 func (st *PSStore) GetGroupId(g *model.Group) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(groupTable.Statements["selectId"]).
+		Select().
+		DataSet(&groupTable).
+		StatementKey("selectId").
 		Params(g.Name).
 		Dest(&ids).
 		Fetch()
@@ -190,7 +193,9 @@ func (st *PSStore) GetGroupId(g *model.Group) error {
 func (st *PSStore) GetMemberId(m *model.Member) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(memberTable.Statements["selectId"]).
+		Select().
+		DataSet(&memberTable).
+		StatementKey("selectId").
 		Params(m.GroupId, m.UserId).
 		Dest(&ids).
 		Fetch()
@@ -210,7 +215,9 @@ func (st *PSStore) GetMemberId(m *model.Member) error {
 func (st *PSStore) GetDatasetId(d *model.Dataset) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(datasetTable.Statements["selectId"]).
+		Select().
+		DataSet(&datasetTable).
+		StatementKey("selectId").
 		Params(d.Name, d.Version, d.Purpose, d.QualityId).
 		Dest(&ids).
 		Fetch()
@@ -242,7 +249,9 @@ func (st *PSStore) GetDatasetId(d *model.Dataset) error {
 func (st *PSStore) GetDataset(d *model.Dataset) error {
 	var ds []model.Dataset
 	err := st.DS.
-		Select(datasetTable.Statements["select"]).
+		Select().
+		DataSet(&datasetTable).
+		StatementKey("select").
 		Params(d.Name, d.Version, d.Purpose, d.QualityId).
 		Dest(&ds).
 		Fetch()
@@ -282,7 +291,9 @@ func (st *PSStore) GetFieldId(f *model.Field) error {
 func (st *PSStore) GetSchemaId(s *model.Schema) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(schemaTable.Statements["selectId"]).
+		Select().
+		DataSet(&schemaTable).
+		StatementKey("selectId").
 		Params(s.Name, s.Version).
 		Dest(&ids).
 		Fetch()
@@ -303,7 +314,9 @@ func (st *PSStore) GetSchemaId(s *model.Schema) error {
 func (st *PSStore) GetQuality(q *model.Quality) error {
 	var qDb model.Quality
 	err := st.DS.
-		Select(qualityTable.Statements["select"]).
+		Select().
+		DataSet(&qualityTable).
+		StatementKey("select").
 		Params(q.Value).
 		Dest(&qDb).
 		Fetch()
@@ -317,7 +330,9 @@ func (st *PSStore) GetQuality(q *model.Quality) error {
 func (st *PSStore) GetQualityId(q *model.Quality) error {
 	var ids []uuid.UUID
 	err := st.DS.
-		Select(qualityTable.Statements["selectId"]).
+		Select().
+		DataSet(&qualityTable).
+		StatementKey("selectId").
 		Params(q.Value).
 		Dest(&ids).
 		Fetch()
@@ -422,7 +437,9 @@ func (st *PSStore) ShpDataInStore(d model.Dataset, s *shp.Reader) (bool, error) 
 func (st *PSStore) UpdateMemberRole(m *model.Member) error {
 	var ids []interface{}
 	err := st.DS.
-		Select(memberTable.Statements["updateRole"]).
+		Select().
+		DataSet(&memberTable).
+		StatementKey("updateRole").
 		Params(m.Id, m.Role).
 		Dest(&ids). // interface doesn't work without a dest sink
 		Fetch()
