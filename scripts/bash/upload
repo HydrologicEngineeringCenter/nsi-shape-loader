@@ -21,6 +21,7 @@ upload() {
     len=$(find $directory -type f -name "*.$suffix" | wc -l)
     for file in $list
     do
+        printf "\n\n"
         echo "Uploading $i/$len - $file"
         declare -a cmd=("go run . --mode upload --sqlConn \"$sqlCred\" --xlsPath $xlsPath --shpPath $file")
         eval $cmd

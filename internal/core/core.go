@@ -23,9 +23,8 @@ import (
 )
 
 func Core(c *cli.Context) error {
-	log.Printf("\n\n")
 	log.Printf("============================================================")
-	log.Printf("                     SEAHORSE v%s                            ", config.APP_VERSION)
+	log.Printf("                     SEAHORSE v%s", config.APP_VERSION)
 	log.Printf("============================================================")
 	//  pre - generate config xls from shp
 	//  upload - upload based on data and metadata from xls and shp
