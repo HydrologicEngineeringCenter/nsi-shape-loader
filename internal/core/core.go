@@ -53,8 +53,8 @@ func Core(c *cli.Context) error {
 func Prep(cfg config.Config) error {
 
 	// copy xls file
-	const baseXlsSrc = config.BaseMetaXlsPath
-	const cpXlsDest = config.FilledMetaXlsPath
+	const baseXlsSrc = config.BASE_META_XLSX_PATH
+	const cpXlsDest = config.COPY_XLSX_PATH
 	err := files.Copy(baseXlsSrc, cpXlsDest)
 	if err != nil {
 		return err
@@ -289,7 +289,7 @@ func Upload(cfg config.Config) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("Data uploaded to dataset.name=%s dataset.id=%s", d.Name, d.Id)
+		log.Printf("Data uploaded to dataset.name=%s dataset.table_name=%s", d.Name, d.TableName)
 	}
 	return err
 }

@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	BaseMetaXlsPath   = "./assets/baseMetaData.xlsx"
-	FilledMetaXlsPath = "./metadata.xlsx"
+	BASE_META_XLSX_PATH = "./assets/baseMetaData.xlsx"
+	COPY_XLSX_PATH      = "./metadata.xlsx"
+	DB_SCHEMA           = "nsi"
 )
 
 // Config is for the general app

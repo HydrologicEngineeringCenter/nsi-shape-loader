@@ -1,12 +1,14 @@
 package store
 
 import (
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	"github.com/usace/goquery"
 )
 
-// TODO maybe this should be a config field
-const DbSchema string = "nsi"
+const (
+	DbSchema = config.DB_SCHEMA
+)
 
 var accessTable = goquery.TableDataSet{
 	Name:   "access",
