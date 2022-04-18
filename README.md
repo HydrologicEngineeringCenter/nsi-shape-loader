@@ -17,6 +17,9 @@ internal/config/config.go)
 
     3. Add access groups via "--mode access"
         go run . --mode access --group nsidev --role admin --user user_id --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+
+    Optional - To upload multiple shp files synchronously, use the included upload bash script
+        ./scripts/bash/upload -x metadatatest.xlsx -d test/nsi/NSI_V2_Archives/V2022/ -s "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 ```
 
 Bonus VIM config: Delve can be used to start a headless debug server inside a
