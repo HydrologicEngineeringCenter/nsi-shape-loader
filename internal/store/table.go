@@ -27,7 +27,7 @@ var datasetTable = goquery.TableDataSet{
 	Schema: DbSchema,
 	Statements: map[string]string{
 		"selectId":   `select id from dataset where name=$1 and version=$2 and purpose=$3 and quality_id=$4`,
-		"select":     `select * from dataset where name=$1 and version=$2 and purpose=$3 and quality_id=$4`,
+		"select":     `select * from dataset where name=$1 and version=$2 and quality_id=$3`,
 		"selectById": `select * from dataset where id=$1`,
 		"insertNullShape": `insert into dataset (
             name,
@@ -41,8 +41,9 @@ var datasetTable = goquery.TableDataSet{
             quality_id,
             group_id
         ) values ($1, $2, $3, $4, ST_Envelope('POLYGON((0 0, 0 0, 0 0, 0 0))'::geometry), $5, $6, $7, $8, $9) returning id`,
-		"updateBBox":           fmt.Sprintf(`update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from %s.{table_name}) where id=$1`, DbSchema),
-		"structureInInventory": fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
+		"updateBBox":            fmt.Sprintf(`update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from %s.{table_name}) where id=$1`, DbSchema),
+		"structureInInventory":  fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
+		"elevationColumnExists": fmt.Sprintf(`select exists (select ground_elev from %s.{table_name})`, DbSchema),
 	},
 }
 

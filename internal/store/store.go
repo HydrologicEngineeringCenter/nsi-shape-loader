@@ -252,7 +252,7 @@ func (st *PSStore) GetDataset(d *model.Dataset) error {
 		Select().
 		DataSet(&datasetTable).
 		StatementKey("select").
-		Params(d.Name, d.Version, d.Purpose, d.QualityId).
+		Params(d.Name, d.Version, d.QualityId).
 		Dest(&ds).
 		Fetch()
 	if err != nil {
@@ -444,4 +444,18 @@ func (st *PSStore) UpdateMemberRole(m *model.Member) error {
 		Dest(&ids). // interface doesn't work without a dest sink
 		Fetch()
 	return err
+}
+
+// ElevationColumnExists tests if column
+func (st *PSStore) ElevationColumnExists(d model.Dataset) (bool, error) {
+	var res bool
+	err := st.DS.
+		Select(strings.ReplaceAll(datasetTable.Statements["elevationColumnExists"], "{table_name}", d.TableName)).
+		Params().
+		Dest(&res).
+		Fetch()
+	if err != nil {
+		return false, err
+	}
+	return res, nil
 }

@@ -73,7 +73,7 @@ create table dataset (
     constraint fk_dataset_nsi_group
         foreign key(group_id)
             references nsi_group(id),
-    unique(name, version, purpose, quality_id)
+    unique(name, version, quality_id)
 );
 
 -- a member can be in multiple groups
