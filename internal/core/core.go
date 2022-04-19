@@ -22,14 +22,12 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-func Core(c *cli.Context) error {
-	log.Printf("============================================================")
-	log.Printf("                     SEAHORSE v%s", config.APP_VERSION)
-	log.Printf("============================================================")
+func Core(c *cli.Context, m types.Mode) error {
+	log.Printf("%s v%s - initializing...", config.APP_NAME, config.APP_VERSION)
 	//  pre - generate config xls from shp
 	//  upload - upload based on data and metadata from xls and shp
 	//  access - change access group and role
-	cfg, err := config.NewConfig(c)
+	cfg, err := config.NewConfig(c, m)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -337,5 +335,32 @@ func ChangeAccess(cfg config.Config) error {
 }
 
 func AddElevation(cfg config.Config) error {
+	st, err := store.NewStore(cfg)
+	if err != nil {
+		return err
+	}
+	q := model.Quality{
+		Value: cfg.ElevationConfig.Quality,
+	}
+	err = st.GetQualityId(&q)
+	if err != nil {
+		return err
+	}
+	d := model.Dataset{
+		Name:      cfg.ElevationConfig.Dataset,
+		Version:   cfg.ElevationConfig.Version,
+		QualityId: q.Id,
+	}
+	err = st.GetDataset(&d)
+	if err != nil {
+		return err
+	}
+	flagColumnExists, err := st.ElevationColumnExists(d)
+	if err != nil {
+		return err
+	}
+	if flagColumnExists {
+		return nil
+	}
 	return nil
 }
