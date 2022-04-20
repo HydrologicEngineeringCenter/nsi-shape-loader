@@ -19,9 +19,8 @@ func main() {
 		Usage:   "Upload ESRI shapefiles to PostGIS database",
 		Commands: []*cli.Command{
 			{
-				Name:    "prepare",
-				Aliases: []string{"p"},
-				Usage:   "Prepare a excel config template",
+				Name:  "prepare",
+				Usage: "Prepare an excel config template",
 				Action: func(c *cli.Context) error {
 					err := core.Core(c, types.Prep)
 					return err
@@ -36,66 +35,92 @@ func main() {
 				},
 			},
 			{
-				Name:    "upload",
-				Aliases: []string{"u"},
-				Usage:   "upload shp file to PostGIS",
-				Action: func(c *cli.Context) error {
-					err := core.Core(c, types.Upload)
-					return err
-				},
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:     "sqlConn",
-						Aliases:  []string{"s"},
-						Usage:    "PostGIS connection string",
-						Required: true,
+				Name:  "mod",
+				Usage: "Options to modify data",
+				Subcommands: []*cli.Command{
+					{
+						Name:  "inventory",
+						Usage: "Upload shp file to PostGIS",
+						Action: func(c *cli.Context) error {
+							err := core.Core(c, types.Upload)
+							return err
+						},
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:     "sqlConn",
+								Aliases:  []string{"s"},
+								Usage:    "PostGIS connection string",
+								Required: true,
+							},
+							&cli.PathFlag{
+								Name:     "xlsPath",
+								Aliases:  []string{"x"},
+								Usage:    "Path to metadata xlsx file",
+								Required: true,
+							},
+							&cli.PathFlag{
+								Name:     "shpPath",
+								Aliases:  []string{"p"},
+								Usage:    "Path to shp file",
+								Required: true,
+							},
+						},
 					},
-					&cli.PathFlag{
-						Name:     "xlsPath",
-						Aliases:  []string{"x"},
-						Usage:    "Path to metadata xlsx file",
-						Required: true,
+					{
+						Name:  "user",
+						Usage: "Add user and their role to group",
+						Action: func(c *cli.Context) error {
+							err := core.Core(c, types.Access)
+							return err
+						},
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:     "sqlConn",
+								Aliases:  []string{"s"},
+								Usage:    "PostGIS connection string",
+								Required: true,
+							},
+							&cli.StringFlag{
+								Name:     "user",
+								Aliases:  []string{"u"},
+								Usage:    "user id",
+								Required: true,
+							},
+							&cli.StringFlag{
+								Name:     "group",
+								Aliases:  []string{"g"},
+								Usage:    "group name",
+								Required: true,
+							},
+							&cli.StringFlag{
+								Name:     "role",
+								Aliases:  []string{"r"},
+								Usage:    "admin / owner / user",
+								Required: true,
+							},
+						},
 					},
-					&cli.PathFlag{
-						Name:     "shpPath",
-						Aliases:  []string{"p"},
-						Usage:    "Path to shp file",
-						Required: true,
-					},
-				},
-			},
-			{
-				Name:    "adduser",
-				Aliases: []string{"a"},
-				Usage:   "add user and their role to group",
-				Action: func(c *cli.Context) error {
-					err := core.Core(c, types.Access)
-					return err
-				},
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:     "sqlConn",
-						Aliases:  []string{"s"},
-						Usage:    "PostGIS connection string",
-						Required: true,
-					},
-					&cli.StringFlag{
-						Name:     "user",
-						Aliases:  []string{"u"},
-						Usage:    "user id",
-						Required: true,
-					},
-					&cli.StringFlag{
-						Name:     "group",
-						Aliases:  []string{"g"},
-						Usage:    "group name",
-						Required: true,
-					},
-					&cli.StringFlag{
-						Name:     "role",
-						Aliases:  []string{"r"},
-						Usage:    "admin / owner / user",
-						Required: true,
+					{
+						Name:  "elevation",
+						Usage: "Add elevation data to inventory table",
+						Action: func(c *cli.Context) error {
+							err := core.Core(c, types.Elevation)
+							return err
+						},
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:     "dataset",
+								Aliases:  []string{"d"},
+								Usage:    "user id",
+								Required: true,
+							},
+							&cli.StringFlag{
+								Name:     "sqlConn",
+								Aliases:  []string{"s"},
+								Usage:    "PostGIS connection string",
+								Required: true,
+							},
+						},
 					},
 				},
 			},

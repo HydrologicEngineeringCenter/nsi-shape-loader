@@ -23,7 +23,7 @@ upload() {
     do
         printf "\n\n"
         echo "Uploading $i/$len - $file"
-        declare -a cmd=("go run . --mode upload --sqlConn \"$sqlCred\" --xlsPath $xlsPath --shpPath $file")
+        declare -a cmd=("go run . mod inventory --sqlConn \"$sqlCred\" --xlsPath $xlsPath --shpPath $file")
         eval $cmd
         i=$(($i+1))
     done
