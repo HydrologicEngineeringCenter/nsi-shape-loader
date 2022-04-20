@@ -111,7 +111,19 @@ func main() {
 							&cli.StringFlag{
 								Name:     "dataset",
 								Aliases:  []string{"d"},
-								Usage:    "user id",
+								Usage:    "Dataset name",
+								Required: true,
+							},
+							&cli.StringFlag{
+								Name:     "version",
+								Aliases:  []string{"v"},
+								Usage:    "Dataset version",
+								Required: true,
+							},
+							&cli.StringFlag{
+								Name:     "quality",
+								Aliases:  []string{"q"},
+								Usage:    "Dataset quality",
 								Required: true,
 							},
 							&cli.StringFlag{
