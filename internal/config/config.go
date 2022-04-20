@@ -155,31 +155,19 @@ func NewConfig(c *cli.Context, mode types.Mode) (Config, error) {
 
 	//validate elevation params
 	if mode == types.Elevation {
-		role := types.Role(c.String("role"))
-		if !util.StrContains([]string{string(types.Admin), string(types.Owner), string(types.User)}, string(role)) {
-			return Config{}, errors.New(fmt.Sprintf(
-				"invalid role, --role accepts only %s, %s, or %s",
-				types.Admin,
-				types.Owner,
-				types.User,
-			))
-		}
-		d := c.String("dataset")
-		if d == "" {
-			return Config{}, errors.New("invalid dataset, --dataset must not be empty")
-		}
-		v := c.String("version")
-		if v == "" {
-			return Config{}, errors.New("invalid dataset version, --version must not be empty")
-		}
-		q := c.String("quality")
-		if q == "" {
-			return Config{}, errors.New("invalid quality, --quality must not be empty")
+		m := map[string]string{}
+		params := []string{"dataset", "version", "quality"}
+		for _, param := range params {
+			p := c.String(param)
+			if p == "" {
+				return Config{}, errors.New(fmt.Sprintf("--%s must not be empty", param))
+			}
+			m[param] = p
 		}
 		elevCfg = ElevationConfig{
-			Dataset: d,
-			Version: v,
-			Quality: types.QualityReverse[q],
+			Dataset: m["dataset"],
+			Version: m["version"],
+			Quality: types.QualityReverse[m["quality"]],
 		}
 	}
 

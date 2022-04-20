@@ -106,8 +106,9 @@ const (
 
 var (
 	ModeReverse = map[string]Mode{
-		"prep":   Prep,
-		"upload": Upload,
-		"access": Access,
+		"prep":      Prep,
+		"upload":    Upload,
+		"access":    Access,
+		"elevation": Elevation,
 	}
 )
