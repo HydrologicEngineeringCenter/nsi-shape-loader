@@ -3,13 +3,13 @@ package store
 import (
 	"fmt"
 
-	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	"github.com/usace/goquery"
 )
 
 const (
-	DbSchema = config.DB_SCHEMA
+	DbSchema = global.DB_SCHEMA
 )
 
 var accessTable = goquery.TableDataSet{

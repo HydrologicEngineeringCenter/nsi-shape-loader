@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/core"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/types"
 	"github.com/urfave/cli/v2"
 )
@@ -14,8 +14,8 @@ import (
 func main() {
 
 	app := &cli.App{
-		Name:    config.APP_NAME,
-		Version: config.APP_VERSION,
+		Name:    global.APP_NAME,
+		Version: global.APP_VERSION,
 		Usage:   "Upload ESRI shapefiles to PostGIS database",
 		Commands: []*cli.Command{
 			{

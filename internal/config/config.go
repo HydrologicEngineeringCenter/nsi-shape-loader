@@ -11,16 +11,6 @@ import (
 	dq "github.com/usace/goquery"
 )
 
-// GLOBAL VARS DUMP
-const (
-	APP_NAME              = "seahorse"
-	APP_VERSION           = "0.5.0"
-	DB_SCHEMA             = "nsiv29test" // CAUTION! CHANGING TO A PRODUCTION SCHEMA CAN OVERRIDE DATA
-	BASE_META_XLSX_PATH   = "./assets/baseMetaData.xlsx"
-	COPY_XLSX_PATH        = "./metadata.xlsx"
-	NATIONAL_MAP_BASE_URL = "https://tnmaccess.nationalmap.gov/api/v1/products?"
-)
-
 // Config is for the general app
 type Config struct {
 	Mode types.Mode

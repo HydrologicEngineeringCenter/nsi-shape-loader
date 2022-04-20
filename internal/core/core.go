@@ -11,6 +11,7 @@ import (
 
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/files"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/ingest"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	shape "github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/shp"
@@ -23,7 +24,7 @@ import (
 )
 
 func Core(c *cli.Context, m types.Mode) error {
-	log.Printf("%s v%s - initializing...", config.APP_NAME, config.APP_VERSION)
+	log.Printf("%s v%s - initializing...", global.APP_NAME, global.APP_VERSION)
 	//  pre - generate config xls from shp
 	//  upload - upload based on data and metadata from xls and shp
 	//  access - change access group and role
@@ -54,8 +55,8 @@ func Core(c *cli.Context, m types.Mode) error {
 func Prep(cfg config.Config) error {
 
 	// copy xls file
-	const baseXlsSrc = config.BASE_META_XLSX_PATH
-	const cpXlsDest = config.COPY_XLSX_PATH
+	const baseXlsSrc = global.BASE_META_XLSX_PATH
+	const cpXlsDest = global.COPY_XLSX_PATH
 	err := files.Copy(baseXlsSrc, cpXlsDest)
 	if err != nil {
 		return err
