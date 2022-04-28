@@ -12,16 +12,6 @@ const (
 	DbSchema = global.DB_SCHEMA
 )
 
-var accessTable = goquery.TableDataSet{
-	Name:   "access",
-	Schema: DbSchema,
-	Statements: map[string]string{
-		"selectId": `select id from access where dataset_id=$1 and value=$2`,
-		"insert":   `insert into access (dataset_id, access_group, role, permission) values ($1, $2, $3, $4) returning id`,
-	},
-	Fields: model.Domain{},
-}
-
 var datasetTable = goquery.TableDataSet{
 	Name:   "dataset",
 	Schema: DbSchema,
@@ -41,9 +31,11 @@ var datasetTable = goquery.TableDataSet{
             quality_id,
             group_id
         ) values ($1, $2, $3, $4, ST_Envelope('POLYGON((0 0, 0 0, 0 0, 0 0))'::geometry), $5, $6, $7, $8, $9) returning id`,
-		"updateBBox":            fmt.Sprintf(`update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from %s.{table_name}) where id=$1`, DbSchema),
-		"structureInInventory":  fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
-		"elevationColumnExists": fmt.Sprintf(`select exists (select ground_elev from %s.{table_name})`, DbSchema),
+		"updateBBox":                 fmt.Sprintf(`update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from %s.{table_name}) where id=$1`, DbSchema),
+		"structureInInventory":       fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
+		"elevationColumnExists":      `select exists (select 1 from information_schema.columns where table_schema=$1 and table_name=$2 and column_name=$3)`,
+		"addElevColumn":              fmt.Sprintf(`alter table %s.{table_name} add column %s double precision`, DbSchema, global.ELEVATION_COLUMN_NAME),
+		"selectEmptyElevationCoords": fmt.Sprintf("select X, Y from %s.{table_name} where %s=null", DbSchema, global.ELEVATION_COLUMN_NAME),
 	},
 }
 

@@ -462,6 +462,18 @@ func (st *PSStore) ElevationColumnExists(d model.Dataset) (bool, error) {
 	return res, nil
 }
 
+func (st *PSStore) AddElevationColumn(d model.Dataset) error {
+	sql := strings.ReplaceAll(datasetTable.Statements["addElevColumn"], "{table_name}", d.TableName)
+	tx, err := st.DS.Transaction()
+	err = st.DS.Exec(&tx, sql)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
+	return err
+
+}
+
 //////////////////////////////////////////////////
 // Add row to sql table generically
 //////////////////////////////////////////////////

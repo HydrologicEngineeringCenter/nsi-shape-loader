@@ -33,17 +33,17 @@ func Core(c *cli.Context, m types.Mode) error {
 		log.Fatal(err)
 	}
 
-	// Prep mode generates the metadata xls required by Upload
 	if cfg.Mode == types.Prep {
 		err = Prep(cfg)
 	}
-	// Upload mode uploads the dataset and associated metadata
 	if cfg.Mode == types.Upload {
 		err = Upload(cfg)
 	}
-	// Access mode change access permission of groups
 	if cfg.Mode == types.Access {
 		err = ChangeAccess(cfg)
+	}
+	if cfg.Mode == types.Elevation {
+		err = AddElevation(cfg)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -326,7 +326,8 @@ func ChangeAccess(cfg config.Config) error {
 	}
 	if m.Id == uuid.Nil {
 		// user has no association to the group
-		err = st.AddMember(&m)
+		// err = st.AddMember(&m)
+		err = store.AddRow(st, &m)
 	} else {
 		// user association exists
 		err = st.UpdateMemberRole(&m)
@@ -356,12 +357,15 @@ func AddElevation(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	flagColumnExists, err := st.ElevationColumnExists(d)
+	elevColumnExists, err := st.ElevationColumnExists(d)
 	if err != nil {
 		return err
 	}
-	if flagColumnExists {
-		return nil
+	if !elevColumnExists {
+		err = st.AddElevationColumn(d)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
