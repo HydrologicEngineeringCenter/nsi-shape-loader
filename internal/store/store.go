@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"reflect"
 	"strings"
 
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	shape "github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/shp"
 	"github.com/google/uuid"
@@ -23,7 +25,7 @@ func NewStore(c config.Config) (*PSStore, error) {
 	dbconf := c.Rdbmsconfig()
 	ds, err := goquery.NewRdbmsDataStore(&dbconf)
 	if err != nil {
-		log.Fatal("Unable to connect to database during startup: %s", err)
+		log.Printf("Unable to connect to database during startup: %s", err)
 	} else {
 		log.Printf("Connected as %s to database %s:%s/%s", c.Dbuser, c.Dbhost, c.Dbport, c.Dbname)
 	}
@@ -446,16 +448,138 @@ func (st *PSStore) UpdateMemberRole(m *model.Member) error {
 	return err
 }
 
-// ElevationColumnExists tests if column
+// ElevationColumnExists tests if elevation column exists for inventory table
 func (st *PSStore) ElevationColumnExists(d model.Dataset) (bool, error) {
 	var res bool
 	err := st.DS.
-		Select(strings.ReplaceAll(datasetTable.Statements["elevationColumnExists"], "{table_name}", d.TableName)).
-		Params().
+		Select(datasetTable.Statements["elevationColumnExists"]).
+		Params(global.DB_SCHEMA, d.TableName, global.ELEVATION_COLUMN_NAME).
 		Dest(&res).
 		Fetch()
 	if err != nil {
 		return false, err
 	}
 	return res, nil
+}
+
+//////////////////////////////////////////////////
+// Add row to sql table generically
+//////////////////////////////////////////////////
+
+// appModels contrainsts generic database access to only a list of structs
+type appModels interface {
+	model.Field | model.Schema | model.Domain | model.SchemaField | model.Dataset | model.Group | model.Member | model.Quality
+}
+
+func getAppModelId[T appModels](m *T) uuid.UUID {
+	return reflect.ValueOf(*m).FieldByName("Id").Interface().(uuid.UUID)
+}
+
+func setAppModelId[T appModels](m *T, id uuid.UUID) {
+	reflect.ValueOf(*m).FieldByName("Id").SetBytes(id[:])
+}
+
+type insertConfig struct {
+	StatementKey string
+	FieldOrder   []string
+	QueryTable   *goquery.TableDataSet
+}
+
+var (
+	// this mapper should be app specific
+	insertConfigMapper = map[reflect.Type]insertConfig{
+		// quality should not be insertable
+		reflect.TypeOf(model.Dataset{}): {
+			StatementKey: "insertNullShape",
+			FieldOrder: []string{
+				"Name", "Version", "SchemaId", "TableName", "Description", "Purpose", "CreatedBy", "QualityId", "GroupId",
+			},
+			QueryTable: &datasetTable,
+		},
+		reflect.TypeOf(model.Domain{}): {
+			StatementKey: "insert",
+			FieldOrder: []string{
+				"FieldId", "Value",
+			},
+			QueryTable: &domainTable,
+		},
+		reflect.TypeOf(model.Field{}): {
+			StatementKey: "insert",
+			FieldOrder: []string{
+				"DbName", "Type", "Description", "IsDomain",
+			},
+			QueryTable: &fieldTable,
+		},
+		reflect.TypeOf(model.Schema{}): {
+			StatementKey: "insert",
+			FieldOrder: []string{
+				"Name", "Version", "Notes",
+			},
+			QueryTable: &schemaTable,
+		},
+		reflect.TypeOf(model.SchemaField{}): {
+			StatementKey: "insert",
+			FieldOrder: []string{
+				"NsiFieldId", "IsPrivate",
+			},
+			QueryTable: &schemaFieldTable,
+		},
+		reflect.TypeOf(model.Group{}): {
+			StatementKey: "insert",
+			FieldOrder: []string{
+				"Name",
+			},
+			QueryTable: &groupTable,
+		},
+		reflect.TypeOf(model.Member{}): {
+			StatementKey: "insert",
+			FieldOrder: []string{
+				"GroupId", "Role", "UserId",
+			},
+			QueryTable: &memberTable,
+		},
+	}
+)
+
+// AddRow adds row to table based on a model struct
+func AddRow[T appModels](st *PSStore, m *T) error {
+	var params []interface{}
+	modelType := reflect.TypeOf(*m)
+	cfg := insertConfigMapper[modelType]
+	// loop over all insertable fields
+	for _, f := range cfg.FieldOrder {
+		fieldVal := reflect.ValueOf(*m).FieldByName(f)
+		valKind := fieldVal.Kind()
+		switch valKind {
+		case reflect.Bool:
+			params = append(params, fieldVal.Bool())
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			params = append(params, fieldVal.Int())
+		case reflect.Float32, reflect.Float64:
+			params = append(params, fieldVal.Float())
+		case reflect.String:
+			params = append(params, fieldVal.String())
+		case reflect.TypeOf(uuid.Nil).Kind():
+			// uuid  Kind() is Ox17 Array, potentially not safe
+			params = append(params, fieldVal.Interface().(uuid.UUID))
+		default:
+			return errors.New(fmt.Sprintf("Generic AddRow does not support param of type: %s", valKind))
+		}
+	}
+
+	var id uuid.UUID
+	err := st.DS.
+		Select().
+		DataSet(cfg.QueryTable).
+		StatementKey(cfg.StatementKey).
+		Params(params...).
+		Dest(&id).
+		Fetch()
+	if err != nil {
+		return err
+	}
+	if getAppModelId(m) == uuid.Nil && id != uuid.Nil {
+		setAppModelId(m, id)
+	}
+	return nil
 }
