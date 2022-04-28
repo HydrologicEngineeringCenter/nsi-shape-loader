@@ -131,3 +131,68 @@ type Member struct {
 	Role    types.Role `db:"role"`
 	UserId  string     `db:"user_id"`
 }
+
+// Is there a better way to do this with removing the Id field?
+func (m *Field) GetId() uuid.UUID {
+	return m.Id
+}
+
+func (m *Domain) GetId() uuid.UUID {
+	return m.Id
+}
+
+func (m *Schema) GetId() uuid.UUID {
+	return m.Id
+}
+
+func (m *SchemaField) GetId() uuid.UUID {
+	return m.Id
+}
+
+func (m *Dataset) GetId() uuid.UUID {
+	return m.Id
+}
+
+func (m *Quality) GetId() uuid.UUID {
+	return m.Id
+}
+
+func (m *Group) GetId() uuid.UUID {
+	return m.Id
+}
+
+func (m *Member) GetId() uuid.UUID {
+	return m.Id
+}
+
+func (m *Field) SetId(id uuid.UUID) {
+	m.Id = id
+}
+
+func (m *Domain) SetId(id uuid.UUID) {
+	m.Id = id
+}
+
+func (m *Dataset) SetId(id uuid.UUID) {
+	m.Id = id
+}
+
+func (m *Group) SetId(id uuid.UUID) {
+	m.Id = id
+}
+
+func (m *Member) SetId(id uuid.UUID) {
+	m.Id = id
+}
+
+func (m *Quality) SetId(id uuid.UUID) {
+	m.Id = id
+}
+
+func (m *Schema) SetId(id uuid.UUID) {
+	m.Id = id
+}
+
+func (m *SchemaField) SetId(id uuid.UUID) {
+	m.Id = id
+}
