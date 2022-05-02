@@ -1,12 +1,12 @@
-# shape-sql-loader
+# shape-sql-loader (seahorse)
 
-shape-sql-loader is intended to be a sysadmin tool to upload a set of shp files
+seahorse is intended to be a sysadmin tool to upload a set of shp files
 to the new NSI database. PostGIS database instance must be accessible by the
 upload environment. The tool requires ogr2ogr and assets/metadataBase.xlsx.
 
 Database setup and cleanup SQL scripts are stored in scripts/sql/. All tables
 must be created inside a specified database schema (changeable in
-internal/config/config.go)
+internal/global/vars.go)
 
 ```golang
     1. Generate metadata template

@@ -4,14 +4,22 @@ go 1.18
 
 replace github.com/usace/xlscellreader => ../xlscellreader
 
+replace github.com/lukeroth/gdal => ../gdal
+
+replace github.com/usace/filestore => ../filestore
+
 require (
 	github.com/jonas-p/go-shp v0.1.1
 	github.com/usace/goquery v0.0.0-20220307153314-47955c94bf3a
 )
 
 require (
+	github.com/usace/filestore v0.1.5-0.20220416172749-6484811f7b13 // indirect
+	github.com/aws/aws-sdk-go v1.31.0 // indirect
 	github.com/georgysavva/scany v0.2.9 // indirect
 	github.com/jackc/pgtype v1.8.1 // indirect
+	github.com/jmespath/go-jmespath v0.3.0 // indirect
+	github.com/lukeroth/gdal v0.0.0-20211109203239-b571df3ee436 // indirect
 	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22 // indirect
 )
 

@@ -35,7 +35,7 @@ var datasetTable = goquery.TableDataSet{
 		"structureInInventory":       fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
 		"elevationColumnExists":      `select exists (select 1 from information_schema.columns where table_schema=$1 and table_name=$2 and column_name=$3)`,
 		"addElevColumn":              fmt.Sprintf(`alter table %s.{table_name} add column %s double precision`, DbSchema, global.ELEVATION_COLUMN_NAME),
-		"selectEmptyElevationCoords": fmt.Sprintf("select X, Y from %s.{table_name} where %s=null", DbSchema, global.ELEVATION_COLUMN_NAME),
+		"selectEmptyElevationCoords": fmt.Sprintf("select X, Y from %s.{table_name} where %s is null", DbSchema, global.ELEVATION_COLUMN_NAME), // TODO limit 10 for test
 	},
 }
 

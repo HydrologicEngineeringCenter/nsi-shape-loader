@@ -13,6 +13,8 @@ services:
     volumes:
       - .:/workspaces/shape-sql-loader
       - ../xlscellreader:/workspaces/xlscellreader
+      - ../gdal:/workspaces/gdal
+      - ../filestore:/workspaces/filestore
     env_file:
       - .devcontainer/devcontainer.env
     working_dir: /workspaces/shape-sql-loader

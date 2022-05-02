@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/elevation"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	shape "github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/shp"
@@ -471,7 +472,20 @@ func (st *PSStore) AddElevationColumn(d model.Dataset) error {
 	}
 	err = tx.Commit()
 	return err
+}
 
+func (st *PSStore) GetEmptyElevationPoints(d model.Dataset) (elevation.Points, error) {
+	sql := strings.ReplaceAll(datasetTable.Statements["selectEmptyElevationCoords"], "{table_name}", d.TableName)
+	var coords elevation.Points
+	err := st.DS.
+		Select(sql).
+		Params().
+		Dest(&coords).
+		Fetch()
+	if err != nil {
+		return nil, err
+	}
+	return coords, nil
 }
 
 //////////////////////////////////////////////////

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/elevation"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/files"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/ingest"
@@ -247,7 +248,7 @@ func Upload(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	sqlArg := store.GenerateSqlArg(shp2DbName, strings.TrimSuffix(
+	sqlArg := shape.GenerateSqlArg(shp2DbName, strings.TrimSuffix(
 		filepath.Base(cfg.ShpPath),
 		filepath.Ext(cfg.ShpPath),
 	))
@@ -366,6 +367,21 @@ func AddElevation(cfg config.Config) error {
 		if err != nil {
 			return err
 		}
+	}
+	points, err := st.GetEmptyElevationPoints(d)
+	if err != nil {
+		return err
+	}
+	eStore, err := elevation.NewElevationAccessor(global.NATIONAL_MAP_QUERY_RESULT_JSON)
+	if err != nil {
+		return err
+	}
+	err = eStore.GetElevation(points)
+	if err != nil {
+		return err
+	}
+	for _, p := range points {
+		fmt.Println(p)
 	}
 	return nil
 }
