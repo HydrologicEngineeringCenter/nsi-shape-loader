@@ -2,45 +2,76 @@ package elevation
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
 	"encoding/json"
 	"io/ioutil"
-	"os"
 
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 )
 
-type QueryBuilder struct {
-	u *url.URL
+type Query struct {
+	u      *url.URL
+	params map[string]string
 }
 
-func NewNationalMapQuery() QueryBuilder {
+func NewNationalMapQuery() Query {
 	u := url.URL{
 		Scheme: global.NATIONAL_MAP_SCHEME,
 		Host:   global.NATIONAL_MAP_HOST,
 		Path:   global.NATIONAL_MAP_PATH,
 	}
-	qb := QueryBuilder{
-		u: &u,
+	qb := Query{
+		u:      &u,
+		params: make(map[string]string),
 	}
 	qb.setParam("dataset", global.NATIONAL_MAP_DATASET)
 	return qb
 }
 
-func (q *QueryBuilder) setParam(k string, v string) {
-	q.u.Query().Set(k, v)
+func (q *Query) setParam(k string, v string) {
+	q.params[k] = v
 }
 
-func (q *QueryBuilder) delParam(k string) {
-	q.u.Query().Del(k)
+func (q *Query) delParam(k string) {
+	delete(q.params, k)
 }
 
-func (q *QueryBuilder) setParams(kv map[string]string) {
+func (q *Query) setParams(kv map[string]string) {
 	for k, v := range kv {
 		q.setParam(k, v)
 	}
+}
+
+func (q *Query) String() string {
+	s := q.u.String() + "?"
+	p := url.Values{}
+	for k, v := range q.params {
+		p.Add(k, v)
+	}
+	return s + p.Encode()
+}
+
+// newQueryResult deserializes json bytes into a QueryResult struct
+func (q *Query) sendRequest() (QueryResult, error) {
+	u := q.String()
+	resp, err := http.Get(u)
+	if err != nil {
+		return QueryResult{}, err
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return QueryResult{}, err
+	}
+	var r QueryResult
+	err = json.Unmarshal(b, &r)
+	if err != nil {
+		return QueryResult{}, err
+	}
+	return r, nil
 }
 
 type QueryResult struct {
@@ -82,24 +113,6 @@ type Item struct {
 
 type Urls struct {
 	Tiff string `json:"TIFF"`
-}
-
-func newQueryResult(path string) (QueryResult, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return QueryResult{}, err
-	}
-	defer f.Close()
-	b, err := ioutil.ReadAll(f)
-	if err != nil {
-		return QueryResult{}, err
-	}
-	var q QueryResult
-	err = json.Unmarshal(b, &q)
-	if err != nil {
-		return QueryResult{}, err
-	}
-	return q, nil
 }
 
 // cacheKey generates a key to the data file within the key/value store

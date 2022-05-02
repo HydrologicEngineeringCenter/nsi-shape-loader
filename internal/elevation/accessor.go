@@ -14,15 +14,16 @@ import (
 type cacheItem filestore.FileStoreResultObject
 
 // ElevationAccessor acts as a caching service around the National Map API and
-// the local filestore
+// the local filestore - TODO maybe spin this out into a general lib, seems useful
 type ElevationAccessor struct {
 	queryResult QueryResult
 	localCache  filestore.FileStore
-	cacheObjs   *[]cacheItem // this wrangling is so convoluted TODO
+	cacheObjs   *[]cacheItem // this wrangling is so convoluted TODO maybe refactor
 }
 
-func NewElevationAccessor(path string) (ElevationAccessor, error) {
-	q, err := newQueryResult(path)
+func NewElevationAccessor(p Points) (ElevationAccessor, error) {
+	b := p.BoundingBox()
+	q, err := b.QueryNationalMap()
 	if err != nil {
 		return ElevationAccessor{}, err
 	}

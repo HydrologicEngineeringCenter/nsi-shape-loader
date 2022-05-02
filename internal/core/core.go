@@ -372,7 +372,7 @@ func AddElevation(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	eStore, err := elevation.NewElevationAccessor(global.NATIONAL_MAP_QUERY_RESULT_JSON)
+	eStore, err := elevation.NewElevationAccessor(points)
 	if err != nil {
 		return err
 	}
