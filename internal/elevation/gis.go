@@ -1,7 +1,11 @@
 package elevation
 
 import (
+	"errors"
 	"fmt"
+	"math"
+
+	"github.com/lukeroth/gdal"
 )
 
 type Point struct {
@@ -86,4 +90,55 @@ func (b BoundingBox) QueryNationalMap() (QueryResult, error) {
 	query.setParam("prodFormats", "GeoTIFF")
 	r, err := query.sendRequest()
 	return r, err
+}
+
+// gdalAccessor wraps around the golang gdal wrapper
+type gdalAccessor struct {
+	d *gdal.Dataset
+	r gdal.RasterBand
+	a gdal.RasterAttributeTable
+}
+
+func newGDALAccessor(file string) (gdalAccessor, error) {
+	driver, err := gdal.GetDriverByName("GTiff")
+	if err != nil {
+		return gdalAccessor{}, err
+	}
+	size := 256
+	d := driver.Create(file, size, size, 1, gdal.Byte, nil)
+	defer d.Close()
+	r := d.RasterBand(1)
+	a := r.GetDefaultRAT()
+	return gdalAccessor{
+		d: &d,
+		r: r,
+		a: a,
+	}, nil
+}
+
+func (g gdalAccessor) calculateElevation(rasterBBox BoundingBox, p Point) error {
+	// ptr := unsafe.Pointer(new([1 * 1]byte))
+	// size := 256
+	// var buf float64
+	// err := g.r.IO(gdal.Read, 5, 5, size, size, buf, size, size, 0, 0)
+	// if err != nil {
+	// 	return err
+	// }
+	buf := []uint8{255}
+	sizeX := g.r.XSize()
+	sizeY := g.r.YSize()
+	pixelSizeX := (rasterBBox.MaxX - rasterBBox.MinX) / float64(sizeX)
+	pixelSizeY := (rasterBBox.MaxY - rasterBBox.MinY) / float64(sizeY)
+	row := (p.X - rasterBBox.MinX) / pixelSizeX
+	col := (p.Y - rasterBBox.MinY) / pixelSizeY
+	if int(row) > sizeX || int(col) > sizeY {
+		return errors.New("Point lies outside Item BoundingBox")
+	}
+	// v := g.r.value(int(row), int(col))
+	// log.Print(v)
+	err := g.r.IO(gdal.Read, int(math.Round(row)), int(math.Round(col)), 1, 1, buf, 1, 1, 0, 0)
+	// err := g.r.ReadBlock(int(math.Round(row)), int(math.Round(col)), ptr)
+	// p.Elevation = (*float64)(ptr)
+	// p.Elevation = &v
+	return err
 }

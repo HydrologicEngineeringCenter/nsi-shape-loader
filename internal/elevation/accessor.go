@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 	"github.com/usace/filestore"
@@ -13,8 +14,13 @@ import (
 
 type cacheItem filestore.FileStoreResultObject
 
+// TODO maybe spin this out into a general lib, seems useful
+
 // ElevationAccessor acts as a caching service around the National Map API and
-// the local filestore - TODO maybe spin this out into a general lib, seems useful
+// the local filestore. The accessor query the National Map service for a list
+// of relevant files based on a BoundingBox generated from a set of Points.
+// If the files are already available in the localCache, then it uses that data.
+// Otherwise, the accessor downloads to localCache before loading.
 type ElevationAccessor struct {
 	queryResult QueryResult
 	localCache  filestore.FileStore
@@ -40,6 +46,60 @@ func NewElevationAccessor(p Points) (ElevationAccessor, error) {
 		return ElevationAccessor{}, err
 	}
 	return e, nil
+}
+
+// GetElevation fills the nil Elevation field for each point
+func (e *ElevationAccessor) GetElevation(p Points) error {
+	errs := make(chan error, 1)
+	// loop through all available items and download relevant file to local cache
+	for _, i := range e.queryResult.Items {
+		// filter for only USGS 1/3 arc-second dataset
+		if strings.Contains(i.Title, "USGS 13 arc-second") {
+			existsInCache, err := e.cacheContains(i)
+			if err != nil {
+				return err
+			}
+			if p.IsIntersecting(i) && !existsInCache {
+				// TODO might be something blocking the multithreading here, not seeing the mutiple threads spawning, could be API rate/concurrency limit
+				go func() {
+					errs <- e.downloadData(i)
+				}()
+				if err := <-errs; err != nil {
+					return err
+				}
+			}
+		}
+	}
+	// loop through all cachedItem TIFF
+	for _, cacheItem := range *e.cacheObjs {
+		i, err := e.getItemFromCacheItem(cacheItem)
+		if err != nil {
+			return err
+		}
+		// intersect points relevant for each cacheItem TIFF
+		intersectedPoints := i.BoundingBox.Intersect(p)
+		cachedKey, err := i.cacheKey()
+		if err != nil {
+			return err
+		}
+		g, err := newGDALAccessor(cachedKey)
+		if err != nil {
+			return err
+		}
+		// populate elevation data for each point
+		for _, point := range intersectedPoints {
+			if point.NilElevation() {
+				// boxed pointer - a trick from rust
+				err = g.calculateElevation(i.BoundingBox, *point)
+				if err != nil {
+					return err
+				}
+				boxed := float64(0)
+				point.Elevation = &boxed // TODO setting to 0 for testing
+			}
+		}
+	}
+	return nil
 }
 
 // getItemFromCacheItem finds the corresponding Item obj from cacheItem
@@ -100,46 +160,6 @@ func (e *ElevationAccessor) downloadData(i Item) error {
 	err = e.refreshCacheObjs()
 	if err != nil {
 		return err
-	}
-	return nil
-}
-
-// GetElevation fills the nil Elevation field for each point
-func (e *ElevationAccessor) GetElevation(p Points) error {
-	errs := make(chan error, 1)
-	// loop through all available items and download relevant file to local cache
-	for _, i := range e.queryResult.Items {
-		existsInCache, err := e.cacheContains(i)
-		if err != nil {
-			return err
-		}
-		if p.IsIntersecting(i) && !existsInCache {
-			// TODO might be something blocking the multithreading here, not seeing the mutiple threads spawning, could be API rate/concurrency limit
-			go func() {
-				errs <- e.downloadData(i)
-			}()
-			if err := <-errs; err != nil {
-				return err
-			}
-		}
-	}
-
-	// loop through all cachedItem TIFF
-	for _, cacheItem := range *e.cacheObjs {
-		i, err := e.getItemFromCacheItem(cacheItem)
-		if err != nil {
-			return err
-		}
-		// intersect points relevant for each cacheItem TIFF
-		intersectedPoints := i.BoundingBox.Intersect(p)
-		// populate elevation data for each point
-		for _, point := range intersectedPoints {
-			if point.NilElevation() {
-				// boxed pointer - a trick from rust
-				boxed := float64(0)
-				point.Elevation = &boxed // TODO setting to 0 for testing
-			}
-		}
 	}
 	return nil
 }
