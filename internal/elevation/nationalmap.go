@@ -116,7 +116,7 @@ type Urls struct {
 }
 
 // cacheKey generates a key to the data file within the key/value store
-func (i Item) cacheKey() string {
+func (i Item) cacheKey() (string, error) {
 	urlTokens := strings.Split(i.DownloadURL, "/")
-	return fmt.Sprintf(`%s/%s`, global.NATIONAL_MAP_CACHE_BASEPATH, urlTokens[len(urlTokens)-1])
+	return url.QueryUnescape(fmt.Sprintf(`%s%s`, global.NATIONAL_MAP_CACHE_BASEPATH, urlTokens[len(urlTokens)-1]))
 }

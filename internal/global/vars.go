@@ -12,10 +12,9 @@ const (
 
 // NATIONAL MAP REQUEST
 const (
-	NATIONAL_MAP_DATASET           = "National Elevation Dataset (NED) 1/9 arc-second"
-	NATIONAL_MAP_SCHEME            = "https"
-	NATIONAL_MAP_HOST              = "tnmaccess.nationalmap.gov"
-	NATIONAL_MAP_PATH              = "api/v1/products"
-	NATIONAL_MAP_CACHE_BASEPATH    = "test/dem/"
-	NATIONAL_MAP_QUERY_RESULT_JSON = "assets/TNMQuery13ArcSec.json"
+	NATIONAL_MAP_DATASET        = "National Elevation Dataset (NED) 1/3 arc-second"
+	NATIONAL_MAP_SCHEME         = "https"
+	NATIONAL_MAP_HOST           = "tnmaccess.nationalmap.gov"
+	NATIONAL_MAP_PATH           = "api/v1/products"
+	NATIONAL_MAP_CACHE_BASEPATH = "test/dem/"
 )

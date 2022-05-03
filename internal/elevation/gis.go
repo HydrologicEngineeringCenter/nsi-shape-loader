@@ -5,10 +5,10 @@ import (
 )
 
 type Point struct {
-	FdId      int     `db:"fd_id"`
-	X         float64 `db:"x"`
-	Y         float64 `db:"y"`
-	Elevation float64 `default:"-999999"`
+	FdId      int      `db:"fd_id"`
+	X         float64  `db:"x"`
+	Y         float64  `db:"y"`
+	Elevation *float64 `db:"ground_elev"` // pointer instead of value for nullable type
 }
 
 type Points []*Point
@@ -22,7 +22,7 @@ type BoundingBox struct {
 
 // NilElevation checks whether Point contains elevation data
 func (p Point) NilElevation() bool {
-	return p.Elevation == -999999
+	return p.Elevation == nil
 }
 
 // Intersect checks whether a list of Points intersect with a National Map Item
@@ -38,7 +38,16 @@ func (p Points) IsIntersecting(i Item) bool {
 // BoundingBox calculates the BoundingBox for a set of Points
 func (p Points) BoundingBox() BoundingBox {
 	b := BoundingBox{}
-	for _, point := range p {
+	if len(p) == 0 {
+		return BoundingBox{}
+	}
+	for i, point := range p {
+		if i == 0 {
+			b.MinX = point.X
+			b.MaxX = point.X
+			b.MinY = point.Y
+			b.MaxY = point.Y
+		}
 		if point.X > b.MaxX {
 			b.MaxX = point.X
 		}
@@ -52,11 +61,7 @@ func (p Points) BoundingBox() BoundingBox {
 			b.MinY = point.Y
 		}
 	}
-	if len(p) == 0 {
-		return BoundingBox{}
-	} else {
-		return b
-	}
+	return b
 }
 
 // Contains checks whether Point is within the BoundingBox
@@ -78,6 +83,7 @@ func (b BoundingBox) Intersect(p Points) Points {
 func (b BoundingBox) QueryNationalMap() (QueryResult, error) {
 	query := NewNationalMapQuery()
 	query.setParam("bbox", fmt.Sprintf("%f,%f,%f,%f", b.MinX, b.MinY, b.MaxX, b.MaxY))
+	query.setParam("prodFormats", "GeoTIFF")
 	r, err := query.sendRequest()
 	return r, err
 }

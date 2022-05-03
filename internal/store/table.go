@@ -31,11 +31,23 @@ var datasetTable = goquery.TableDataSet{
             quality_id,
             group_id
         ) values ($1, $2, $3, $4, ST_Envelope('POLYGON((0 0, 0 0, 0 0, 0 0))'::geometry), $5, $6, $7, $8, $9) returning id`,
-		"updateBBox":                 fmt.Sprintf(`update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from %s.{table_name}) where id=$1`, DbSchema),
-		"structureInInventory":       fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
-		"elevationColumnExists":      `select exists (select 1 from information_schema.columns where table_schema=$1 and table_name=$2 and column_name=$3)`,
-		"addElevColumn":              fmt.Sprintf(`alter table %s.{table_name} add column %s double precision`, DbSchema, global.ELEVATION_COLUMN_NAME),
-		"selectEmptyElevationCoords": fmt.Sprintf("select X, Y from %s.{table_name} where %s is null", DbSchema, global.ELEVATION_COLUMN_NAME), // TODO limit 10 for test
+		"updateBBox":            fmt.Sprintf(`update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from %s.{table_name}) where id=$1`, DbSchema),
+		"structureInInventory":  fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
+		"elevationColumnExists": `select exists (select 1 from information_schema.columns where table_schema=$1 and table_name=$2 and column_name=$3)`,
+		"addElevColumn":         fmt.Sprintf(`alter table %s.{table_name} add column %s double precision`, DbSchema, global.ELEVATION_COLUMN_NAME),
+		// "selectEmptyElevationCoords": fmt.Sprintf(
+		// 	"select fd_id, X, Y, case when %s is null then -999999 else %s from %s.{table_name} where %s is null limit 10",
+		// 	global.ELEVATION_COLUMN_NAME,
+		// 	global.ELEVATION_COLUMN_NAME,
+		// 	DbSchema,
+		// 	global.ELEVATION_COLUMN_NAME,
+		// ), // TODO limit 10 for test
+		"selectEmptyElevationCoords": fmt.Sprintf(
+			"select fd_id, X, Y, %s from %s.{table_name} where %s is null limit 10",
+			global.ELEVATION_COLUMN_NAME,
+			DbSchema,
+			global.ELEVATION_COLUMN_NAME,
+		), // TODO limit 10 for test
 	},
 }
 

@@ -45,7 +45,11 @@ func NewElevationAccessor(p Points) (ElevationAccessor, error) {
 // getItemFromCacheItem finds the corresponding Item obj from cacheItem
 func (e *ElevationAccessor) getItemFromCacheItem(c cacheItem) (Item, error) {
 	for _, i := range e.queryResult.Items {
-		if i.cacheKey() == c.Path {
+		cachedKey, err := i.cacheKey()
+		if err != nil {
+			return Item{}, err
+		}
+		if cachedKey == (c.Path + c.Name) {
 			return i, nil
 		}
 	}
@@ -59,12 +63,13 @@ func (e *ElevationAccessor) refreshCacheObjs() error {
 	if err != nil {
 		return err
 	}
-	var flush *[]cacheItem
+	var flush []cacheItem
 	for _, i := range *o {
 		// coerce to the new alias type
-		*flush = append(*flush, cacheItem(i))
+		coerced := cacheItem(i)
+		flush = append(flush, coerced)
 	}
-	e.cacheObjs = flush
+	e.cacheObjs = &flush
 	if err != nil {
 		return err
 	}
@@ -74,7 +79,11 @@ func (e *ElevationAccessor) refreshCacheObjs() error {
 // downloadData sends out a get request to the National Map API
 // and download data to localCache
 func (e *ElevationAccessor) downloadData(i Item) error {
-	out, err := os.Create(i.cacheKey())
+	cachedKey, err := i.cacheKey()
+	if err != nil {
+		return err
+	}
+	out, err := os.Create(cachedKey)
 	if err != nil {
 		return err
 	}
@@ -95,11 +104,17 @@ func (e *ElevationAccessor) downloadData(i Item) error {
 	return nil
 }
 
+// GetElevation fills the nil Elevation field for each point
 func (e *ElevationAccessor) GetElevation(p Points) error {
 	errs := make(chan error, 1)
 	// loop through all available items and download relevant file to local cache
 	for _, i := range e.queryResult.Items {
-		if p.IsIntersecting(i) && !e.cacheContains(i) {
+		existsInCache, err := e.cacheContains(i)
+		if err != nil {
+			return err
+		}
+		if p.IsIntersecting(i) && !existsInCache {
+			// TODO might be something blocking the multithreading here, not seeing the mutiple threads spawning, could be API rate/concurrency limit
 			go func() {
 				errs <- e.downloadData(i)
 			}()
@@ -120,7 +135,9 @@ func (e *ElevationAccessor) GetElevation(p Points) error {
 		// populate elevation data for each point
 		for _, point := range intersectedPoints {
 			if point.NilElevation() {
-				point.Elevation = 0 // TODO test
+				// boxed pointer - a trick from rust
+				boxed := float64(0)
+				point.Elevation = &boxed // TODO setting to 0 for testing
 			}
 		}
 	}
@@ -128,9 +145,13 @@ func (e *ElevationAccessor) GetElevation(p Points) error {
 }
 
 // cacheContains returns true if item is already downloaded and in local cache
-func (e *ElevationAccessor) cacheContains(i Item) bool {
-	if _, err := os.Stat(i.cacheKey()); errors.Is(err, os.ErrNotExist) {
-		return false
+func (e *ElevationAccessor) cacheContains(i Item) (bool, error) {
+	cachedKey, err := i.cacheKey()
+	if err != nil {
+		return false, err
 	}
-	return true
+	if _, err := os.Stat(cachedKey); errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return true, nil
 }
