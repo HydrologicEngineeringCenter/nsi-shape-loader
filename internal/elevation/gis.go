@@ -3,7 +3,7 @@ package elevation
 import (
 	"errors"
 	"fmt"
-	"math"
+	"log"
 
 	"github.com/lukeroth/gdal"
 )
@@ -95,50 +95,64 @@ func (b BoundingBox) QueryNationalMap() (QueryResult, error) {
 // gdalAccessor wraps around the golang gdal wrapper
 type gdalAccessor struct {
 	d *gdal.Dataset
-	r gdal.RasterBand
-	a gdal.RasterAttributeTable
+	r *gdal.RasterBand
+	// a gdal.RasterAttributeTable
 }
 
 func newGDALAccessor(file string) (gdalAccessor, error) {
-	driver, err := gdal.GetDriverByName("GTiff")
+	d, err := gdal.Open(file, gdal.ReadOnly)
+	// driver, err := gdal.GetDriverByName("GTiff")
 	if err != nil {
 		return gdalAccessor{}, err
 	}
-	size := 256
-	d := driver.Create(file, size, size, 1, gdal.Byte, nil)
+	// size := 10812
+	// d := driver.Create(file, size, size, 1, gdal.Byte, nil)
 	defer d.Close()
 	r := d.RasterBand(1)
-	a := r.GetDefaultRAT()
+	// a := r.GetDefaultRAT()
 	return gdalAccessor{
 		d: &d,
-		r: r,
-		a: a,
+		r: &r,
+		// a: a,
 	}, nil
 }
 
 func (g gdalAccessor) calculateElevation(rasterBBox BoundingBox, p Point) error {
-	// ptr := unsafe.Pointer(new([1 * 1]byte))
-	// size := 256
-	// var buf float64
-	// err := g.r.IO(gdal.Read, 5, 5, size, size, buf, size, size, 0, 0)
-	// if err != nil {
-	// 	return err
+	// ndv, valid := g.r.NoDataValue()
+	// if !valid {
+	// 	log.Fatal("Invalid read from GeoTIFF")
 	// }
-	buf := []uint8{255}
+	// log.Print(ndv)
+	bufSizeX := int(1)
+	bufSizeY := int(1)
+	buf := make([]float32, bufSizeX*bufSizeY)
 	sizeX := g.r.XSize()
 	sizeY := g.r.YSize()
 	pixelSizeX := (rasterBBox.MaxX - rasterBBox.MinX) / float64(sizeX)
 	pixelSizeY := (rasterBBox.MaxY - rasterBBox.MinY) / float64(sizeY)
-	row := (p.X - rasterBBox.MinX) / pixelSizeX
-	col := (p.Y - rasterBBox.MinY) / pixelSizeY
+	row := int((p.X - rasterBBox.MinX) / pixelSizeX)
+	col := int((p.Y - rasterBBox.MinY) / pixelSizeY)
 	if int(row) > sizeX || int(col) > sizeY {
 		return errors.New("Point lies outside Item BoundingBox")
 	}
-	// v := g.r.value(int(row), int(col))
-	// log.Print(v)
-	err := g.r.IO(gdal.Read, int(math.Round(row)), int(math.Round(col)), 1, 1, buf, 1, 1, 0, 0)
+	log.Print(g.r.XSize())
+	log.Print(g.r.YSize())
+	var err error
+	// err = g.r.AdviseRead(row, col, 1, 1, bufSizeX, bufSizeY, gdal.Float32, []string{})
+	// if err != nil {
+	// 	return err
+	// }
+	log.Print("calling gdal RasterIO")
+	// C++ API
+	// https://gdal.org/api/gdalrasterband_cpp.html
+	err = g.r.IO(gdal.Read, row, col, bufSizeX, bufSizeY, buf, bufSizeX, bufSizeY, 0, 0)
+	if err != nil {
+		return err
+	}
+	// err := g.r.IO(gdal.Read, 0, 0, 1, 1, buf, 1, 1, 0, 0)
 	// err := g.r.ReadBlock(int(math.Round(row)), int(math.Round(col)), ptr)
 	// p.Elevation = (*float64)(ptr)
 	// p.Elevation = &v
-	return err
+	log.Print(buf)
+	return nil
 }
