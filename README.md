@@ -6,7 +6,7 @@ upload environment. The tool requires ogr2ogr and assets/metadataBase.xlsx.
 
 Database setup and cleanup SQL scripts are stored in scripts/sql/. All tables
 must be created inside a specified database schema (changeable in
-internal/global/vars.go)
+internal/global/vars.go). Field X, and Y must exist for each inventory row.
 
 ```golang
     1. Generate metadata template
@@ -15,11 +15,11 @@ internal/global/vars.go)
     2. Fill in metadata xls file and upload
         go run . mod inventory --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15003.shp --xlsPath /workspaces/shape-sql-loader/metadatatest.xlsx --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 
+    Optional - To upload multiple shp files synchronously, use the included upload bash script
+        uploadDir -x metadatatest.xlsx -d test/nsi/NSI_V2_Archives/V2022/ -s "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+
     3. Add user to group
         go run . mod user --group nsidev --role admin --user user_id --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
-
-    Optional - To upload multiple shp files synchronously, use the included upload bash script
-        ./scripts/bash/upload -x metadatatest.xlsx -d test/nsi/NSI_V2_Archives/V2022/ -s "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 
     4. To add elevation to a dataset
         go run . mod elevation --dataset testDataset --version 0.0.2 --quality high --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"

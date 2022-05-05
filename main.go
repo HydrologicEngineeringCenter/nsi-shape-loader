@@ -20,7 +20,7 @@ func main() {
 		Commands: []*cli.Command{
 			{
 				Name:  "prepare",
-				Usage: "Prepare an excel config template",
+				Usage: "Prepare an modifiable metadata template",
 				Action: func(c *cli.Context) error {
 					err := core.Core(c, types.Prep)
 					return err
