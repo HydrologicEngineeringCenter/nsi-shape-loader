@@ -36,11 +36,13 @@ var datasetTable = goquery.TableDataSet{
 		"elevationColumnExists": `select exists (select 1 from information_schema.columns where table_schema=$1 and table_name=$2 and column_name=$3)`,
 		"addElevColumn":         fmt.Sprintf(`alter table %s.{table_name} add column %s double precision`, DbSchema, global.ELEVATION_COLUMN_NAME),
 		"selectEmptyElevationCoords": fmt.Sprintf(
-			"select fd_id, X, Y, %s from %s.{table_name} where %s is null limit 10",
+			// "select fd_id, X, Y, %s from %s.{table_name} where %s is null order by random() limit 3",
+			"select fd_id, X, Y, %s from %s.{table_name} where %s is null limit $1 offset $2",
 			global.ELEVATION_COLUMN_NAME,
 			DbSchema,
 			global.ELEVATION_COLUMN_NAME,
 		), // TODO limit 10 for test
+		"updateElevation": fmt.Sprintf("update %s.{table_name} set %s=$1 where fd_id=$2", DbSchema, global.ELEVATION_COLUMN_NAME),
 	},
 }
 

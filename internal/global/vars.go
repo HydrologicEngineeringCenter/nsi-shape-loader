@@ -2,12 +2,14 @@ package global
 
 // APP
 const (
-	APP_NAME              = "seahorse"
-	APP_VERSION           = "0.5.0"
-	DB_SCHEMA             = "nsiv29test" // CAUTION! CHANGING TO A PRODUCTION SCHEMA CAN OVERRIDE DATA
-	BASE_META_XLSX_PATH   = "./assets/baseMetaData.xlsx"
-	COPY_XLSX_PATH        = "./metadata.xlsx"
-	ELEVATION_COLUMN_NAME = "ground_elev"
+	APP_NAME                       = "seahorse"
+	APP_VERSION                    = "0.5.0"
+	DB_SCHEMA                      = "nsiv29test" // CAUTION! CHANGING TO A PRODUCTION SCHEMA CAN OVERRIDE DATA
+	BASE_META_XLSX_PATH            = "./assets/baseMetaData.xlsx"
+	COPY_XLSX_PATH                 = "./metadata.xlsx"
+	ELEVATION_COLUMN_NAME          = "ground_elev"
+	ELEVATION_BATCHSIZE            = 1000
+	ELEVATION_NO_PARALLEL_ROUTINES = 4
 )
 
 // NATIONAL MAP REQUEST

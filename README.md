@@ -22,7 +22,7 @@ internal/global/vars.go)
         ./scripts/bash/upload -x metadatatest.xlsx -d test/nsi/NSI_V2_Archives/V2022/ -s "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 
     4. To add elevation to a dataset
-        go run . mod elevation --dataset testDataset --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+        go run . mod elevation --dataset testDataset --version 0.0.2 --quality high --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 ```
 
 Bonus VIM config: Delve can be used to start a headless debug server inside a

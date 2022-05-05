@@ -474,18 +474,54 @@ func (st *PSStore) AddElevationColumn(d model.Dataset) error {
 	return err
 }
 
-func (st *PSStore) GetEmptyElevationPoints(d model.Dataset) (elevation.Points, error) {
+func (st *PSStore) GetEmptyElevationPoints(d model.Dataset, count int, offset int) (elevation.Points, error) {
 	sql := strings.ReplaceAll(datasetTable.Statements["selectEmptyElevationCoords"], "{table_name}", d.TableName)
 	var coords elevation.Points
 	err := st.DS.
 		Select(sql).
-		Params().
+		Params(count, offset).
 		Dest(&coords).
 		Fetch()
 	if err != nil {
 		return nil, err
 	}
 	return coords, nil
+}
+
+func (st *PSStore) UpdateElevationAtPoint(d model.Dataset, points elevation.Points) error {
+	// batchSize here is the db update batchSize, not to be confused with the goroutine batchSize
+	batchSize := 100
+	var tx goquery.Tx
+	var err error
+	tx, err = st.DS.Transaction()
+	if err != nil {
+		return err
+	}
+	for i, p := range points {
+		if i%batchSize == 0 {
+		}
+		sql := strings.ReplaceAll(datasetTable.Statements["updateElevation"], "{table_name}", d.TableName)
+		err = st.DS.Exec(&tx, sql, *p.Elevation, p.FdId)
+		if err != nil {
+			return err
+		}
+		// commit batch, create new Tx
+		if i%batchSize == 0 {
+			err = tx.Commit()
+			if err != nil {
+				return err
+			}
+			tx, err = st.DS.Transaction()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //////////////////////////////////////////////////

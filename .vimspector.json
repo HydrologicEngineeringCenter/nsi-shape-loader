@@ -21,6 +21,26 @@
         },
         "delay": "500m"
       }
+    },
+    "docker-gdb": {
+      "command": [
+        "node",
+        "${gadgetDir}/vscode-cpptools/debugAdapters/OpenDebugAD7"
+      ],
+      "launch": {
+        "remote": {
+          "container": "SHAPELOADER_DEV",
+          "runCommand": [
+            "gdbserver",
+            "--once",
+            "--no-startup-with-shell",
+            "--disable-randomization",
+            "0.0.0.0:2345",
+            "%CMD%"
+          ]
+        },
+        "delay": "500m"
+      }
     }
   },
   "configurations": {
@@ -150,6 +170,34 @@
         "request": "attach",
         "mode": "remote",
         "remotePath": "/workspaces/shape-sql-loader",
+        "cwd": "${workspaceRoot}",
+        "host": "host.docker.internal",
+        "port": 2345
+      }
+    },
+    "gdb-elevation": {
+      "adapter": "docker-gdb",
+      "type": "go",
+      "remote-request": "launch",
+      "remote-cmdLine": [
+        "seahorse"
+      ],
+      "configuration": {
+        "request": "attach",
+        "mode": "remote",
+        "remotePath": "/workspaces/shape-sql-loader/seahorse",
+        "remote-cmdLine": [
+          "mod",
+          "elevation",
+          "--dataset",
+          "testDataset",
+          "--version",
+          "0.0.2",
+          "--quality",
+          "high",
+          "--sqlConn",
+          "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+        ],
         "cwd": "${workspaceRoot}",
         "host": "host.docker.internal",
         "port": 2345

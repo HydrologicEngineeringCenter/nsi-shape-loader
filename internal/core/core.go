@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/elevation"
@@ -327,7 +328,6 @@ func ChangeAccess(cfg config.Config) error {
 	}
 	if m.Id == uuid.Nil {
 		// user has no association to the group
-		// err = st.AddMember(&m)
 		err = store.AddRow(st, &m)
 	} else {
 		// user association exists
@@ -368,7 +368,53 @@ func AddElevation(cfg config.Config) error {
 			return err
 		}
 	}
-	points, err := st.GetEmptyElevationPoints(d)
+
+	// spin off goroutines to update
+	var wg sync.WaitGroup
+	// var eg errgroup.Group
+	// errs := make(chan error)
+	// wgDone := make(chan bool)
+	for {
+		// check if there are still null vals in ground_elev
+		points, err := st.GetEmptyElevationPoints(d, 1, 0)
+		if err != nil {
+			return err
+		}
+		if len(points) == 0 {
+			break
+		}
+		for i := 0; i < global.ELEVATION_NO_PARALLEL_ROUTINES; i++ {
+			wg.Add(1)
+			go func(i int) {
+				defer func() {
+					log.Print("thread ", i, " finished")
+					wg.Done()
+				}()
+				err := addElevationToInventory(
+					st,
+					global.ELEVATION_BATCHSIZE,
+					i*global.ELEVATION_BATCHSIZE,
+					d,
+				)
+				if err != nil {
+					// there's no write conflict in addElevationToInventory, just a single writer,
+					// function fails on invalid read
+					// this is chaosmonkey compliant, just terminate routine on error
+					log.Print(err)
+					// errs <- err
+				}
+			}(i)
+		}
+		wg.Wait()
+		// if err := <-errs; err != nil {
+		// 	return err
+		// }
+	}
+	return nil
+}
+
+func addElevationToInventory(s *store.PSStore, batchSize int, offset int, d model.Dataset) error {
+	points, err := s.GetEmptyElevationPoints(d, batchSize, offset)
 	if err != nil {
 		return err
 	}
@@ -380,8 +426,9 @@ func AddElevation(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	for _, p := range points {
-		fmt.Println(p)
+	err = s.UpdateElevationAtPoint(d, points)
+	if err != nil {
+		return err
 	}
 	return nil
 }

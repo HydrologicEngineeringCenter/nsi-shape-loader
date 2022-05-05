@@ -2,8 +2,6 @@ package elevation
 
 import (
 	"errors"
-	"fmt"
-	"log"
 
 	"github.com/lukeroth/gdal"
 )
@@ -107,17 +105,13 @@ func (g gdalAccessor) close() {
 }
 
 func (g gdalAccessor) calculateElevation(rasterBBox BoundingBox, p *Point) error {
-	fmt.Print(g.r.GetUnitType())
 	bufSizeX := int(1)
 	bufSizeY := int(1)
-	buf := make([]float32, 2)
+	buf := make([]float32, bufSizeX*bufSizeY)
 	sizeX := g.r.XSize()
 	sizeY := g.r.YSize()
-	// pixelSizeX := (rasterBBox.MaxX - rasterBBox.MinX) / float64(sizeX)
-	// pixelSizeY := (rasterBBox.MaxY - rasterBBox.MinY) / float64(sizeY)
-	// row := int((p.X - rasterBBox.MinX) / pixelSizeX)
-	// col := int((p.Y - rasterBBox.MinY) / pixelSizeY)
-	g.d.GeoTransform()
+	// https://gdal.org/tutorials/geotransforms_tut.html
+	// InvGeoTransform works exactly like GeoTransform, but converts from image coordinate space to goreference space
 	igt := g.d.InvGeoTransform()
 	row := int(igt[0] + p.X*igt[1] + p.Y*igt[2])
 	col := int(igt[3] + p.X*igt[4] + p.Y*igt[5])
@@ -125,17 +119,12 @@ func (g gdalAccessor) calculateElevation(rasterBBox BoundingBox, p *Point) error
 		return errors.New("Point lies outside Item BoundingBox")
 	}
 	var err error
-	// err = g.r.AdviseRead(row, col, bufSizeX, bufSizeY, bufSizeX, bufSizeY, gdal.Float32, []string{})
-	// if err != nil {
-	// 	return err
-	// }
 	// C++ API
 	// https://gdal.org/api/gdalrasterband_cpp.html
 	err = g.r.IO(gdal.Read, row, col, bufSizeX, bufSizeY, buf, bufSizeX, bufSizeY, 0, 0)
 	if err != nil {
 		return err
 	}
-	log.Print(g.r.GetUnitType())
 	v := float64(buf[0])
 	p.Elevation = &v
 	return nil

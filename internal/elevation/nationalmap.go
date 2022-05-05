@@ -28,6 +28,7 @@ func NewNationalMapQuery() Query {
 		params: make(map[string]string),
 	}
 	qb.setParam("dataset", global.NATIONAL_MAP_DATASET)
+	qb.setParam("prodFormats", "GeoTIFF")
 	return qb
 }
 
@@ -52,6 +53,18 @@ func (q *Query) String() string {
 		p.Add(k, v)
 	}
 	return s + p.Encode()
+}
+
+func (q *Query) QueryName(n string) (QueryResult, error) {
+	q.setParam("q", n)
+	r, err := q.sendRequest()
+	return r, err
+}
+
+func (q *Query) QueryBoundingBox(b BoundingBox) (QueryResult, error) {
+	q.setParam("bbox", fmt.Sprintf("%f,%f,%f,%f", b.MinX, b.MinY, b.MaxX, b.MaxY))
+	r, err := q.sendRequest()
+	return r, err
 }
 
 // newQueryResult deserializes json bytes into a QueryResult struct

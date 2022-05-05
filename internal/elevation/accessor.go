@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -29,7 +30,8 @@ type ElevationAccessor struct {
 
 func NewElevationAccessor(p Points) (ElevationAccessor, error) {
 	b := p.BoundingBox()
-	q, err := b.QueryNationalMap()
+	mq := NewNationalMapQuery()
+	q, err := mq.QueryBoundingBox(b)
 	if err != nil {
 		return ElevationAccessor{}, err
 	}
@@ -50,7 +52,6 @@ func NewElevationAccessor(p Points) (ElevationAccessor, error) {
 
 // GetElevation fills the nil Elevation field for each point
 func (e *ElevationAccessor) GetElevation(p Points) error {
-	errs := make(chan error, 1)
 	// loop through all available items and download relevant file to local cache
 	for _, i := range e.queryResult.Items {
 		// filter for only USGS 1/3 arc-second dataset
@@ -60,11 +61,10 @@ func (e *ElevationAccessor) GetElevation(p Points) error {
 				return err
 			}
 			if p.IsIntersecting(i) && !existsInCache {
-				// TODO might be something blocking the multithreading here, not seeing the mutiple threads spawning, could be API rate/concurrency limit
-				go func() {
-					errs <- e.downloadData(i)
-				}()
-				if err := <-errs; err != nil {
+				log.Print("Downloading data from: " + i.DownloadURL)
+				// errs <- e.downloadData(i)
+				err := e.downloadData(i)
+				if err != nil {
 					return err
 				}
 			}
@@ -86,16 +86,15 @@ func (e *ElevationAccessor) GetElevation(p Points) error {
 		if err != nil {
 			return err
 		}
+		defer g.close()
 		// populate elevation data for each point
 		for _, point := range intersectedPoints {
 			if point.NilElevation() {
 				// boxed pointer - a trick from rust
-				err = g.calculateElevation(i.BoundingBox, *point)
+				err = g.calculateElevation(i.BoundingBox, point)
 				if err != nil {
 					return err
 				}
-				boxed := float64(0)
-				point.Elevation = &boxed // TODO setting to 0 for testing
 			}
 		}
 	}
@@ -104,7 +103,24 @@ func (e *ElevationAccessor) GetElevation(p Points) error {
 
 // getItemFromCacheItem finds the corresponding Item obj from cacheItem
 func (e *ElevationAccessor) getItemFromCacheItem(c cacheItem) (Item, error) {
+	// TODO refactor this func
 	for _, i := range e.queryResult.Items {
+		cachedKey, err := i.cacheKey()
+		if err != nil {
+			return Item{}, err
+		}
+		if cachedKey == (c.Path + c.Name) {
+			return i, nil
+		}
+	}
+	// if not found in current QueryResult, requery
+	mq := NewNationalMapQuery()
+	tokens := strings.Split(c.Name, "_")
+	q, err := mq.QueryName(tokens[len(tokens)-2])
+	if err != nil {
+		return Item{}, err
+	}
+	for _, i := range q.Items {
 		cachedKey, err := i.cacheKey()
 		if err != nil {
 			return Item{}, err
@@ -157,6 +173,13 @@ func (e *ElevationAccessor) downloadData(i Item) error {
 	if err != nil {
 		return err
 	}
+	// s, err := os.Stat(cachedKey)
+	if err != nil {
+		return err
+	}
+	// if s.Size() != int64(i.SizeInBytes) {
+	// 	return errors.New("File download unsuccessfully")
+	// }
 	err = e.refreshCacheObjs()
 	if err != nil {
 		return err
