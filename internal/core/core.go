@@ -365,6 +365,9 @@ func AddElevation(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
+	if d.TableName == "" {
+		return errors.New(fmt.Sprintf("Unable to find dataset=%s version=%s quality=%s", d.Name, d.Version, q.Value))
+	}
 	elevColumnExists, err := st.ElevationColumnExists(d)
 	if err != nil {
 		return err
