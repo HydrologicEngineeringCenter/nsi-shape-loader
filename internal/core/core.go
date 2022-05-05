@@ -328,10 +328,17 @@ func ChangeAccess(cfg config.Config) error {
 	}
 	if m.Id == uuid.Nil {
 		// user has no association to the group
-		err = store.AddRow(st, &m)
+		// err = store.AddRow(st, &m)
+		err = st.AddMember(&m)
+		if err != nil {
+			return err
+		}
 	} else {
 		// user association exists
 		err = st.UpdateMemberRole(&m)
+		if err != nil {
+			return err
+		}
 	}
 	log.Printf("member.user_id=%s now exists as member.role=%s for group.name=%s", m.UserId, m.Role, g.Name)
 	return err
