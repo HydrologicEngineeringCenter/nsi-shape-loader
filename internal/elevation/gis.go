@@ -84,75 +84,59 @@ func (b BoundingBox) Intersect(p Points) Points {
 	return selectedPoints
 }
 
-func (b BoundingBox) QueryNationalMap() (QueryResult, error) {
-	query := NewNationalMapQuery()
-	query.setParam("bbox", fmt.Sprintf("%f,%f,%f,%f", b.MinX, b.MinY, b.MaxX, b.MaxY))
-	query.setParam("prodFormats", "GeoTIFF")
-	r, err := query.sendRequest()
-	return r, err
-}
-
 // gdalAccessor wraps around the golang gdal wrapper
 type gdalAccessor struct {
 	d *gdal.Dataset
 	r *gdal.RasterBand
-	// a gdal.RasterAttributeTable
 }
 
 func newGDALAccessor(file string) (gdalAccessor, error) {
 	d, err := gdal.Open(file, gdal.ReadOnly)
-	// driver, err := gdal.GetDriverByName("GTiff")
 	if err != nil {
 		return gdalAccessor{}, err
 	}
-	// size := 10812
-	// d := driver.Create(file, size, size, 1, gdal.Byte, nil)
-	defer d.Close()
 	r := d.RasterBand(1)
-	// a := r.GetDefaultRAT()
 	return gdalAccessor{
 		d: &d,
 		r: &r,
-		// a: a,
 	}, nil
 }
 
-func (g gdalAccessor) calculateElevation(rasterBBox BoundingBox, p Point) error {
-	// ndv, valid := g.r.NoDataValue()
-	// if !valid {
-	// 	log.Fatal("Invalid read from GeoTIFF")
-	// }
-	// log.Print(ndv)
+func (g gdalAccessor) close() {
+	g.d.Close()
+}
+
+func (g gdalAccessor) calculateElevation(rasterBBox BoundingBox, p *Point) error {
+	fmt.Print(g.r.GetUnitType())
 	bufSizeX := int(1)
 	bufSizeY := int(1)
-	buf := make([]float32, bufSizeX*bufSizeY)
+	buf := make([]float32, 2)
 	sizeX := g.r.XSize()
 	sizeY := g.r.YSize()
-	pixelSizeX := (rasterBBox.MaxX - rasterBBox.MinX) / float64(sizeX)
-	pixelSizeY := (rasterBBox.MaxY - rasterBBox.MinY) / float64(sizeY)
-	row := int((p.X - rasterBBox.MinX) / pixelSizeX)
-	col := int((p.Y - rasterBBox.MinY) / pixelSizeY)
-	if int(row) > sizeX || int(col) > sizeY {
+	// pixelSizeX := (rasterBBox.MaxX - rasterBBox.MinX) / float64(sizeX)
+	// pixelSizeY := (rasterBBox.MaxY - rasterBBox.MinY) / float64(sizeY)
+	// row := int((p.X - rasterBBox.MinX) / pixelSizeX)
+	// col := int((p.Y - rasterBBox.MinY) / pixelSizeY)
+	g.d.GeoTransform()
+	igt := g.d.InvGeoTransform()
+	row := int(igt[0] + p.X*igt[1] + p.Y*igt[2])
+	col := int(igt[3] + p.X*igt[4] + p.Y*igt[5])
+	if row < 0 || row > sizeX || col < 0 || col > sizeY {
 		return errors.New("Point lies outside Item BoundingBox")
 	}
-	log.Print(g.r.XSize())
-	log.Print(g.r.YSize())
 	var err error
-	// err = g.r.AdviseRead(row, col, 1, 1, bufSizeX, bufSizeY, gdal.Float32, []string{})
+	// err = g.r.AdviseRead(row, col, bufSizeX, bufSizeY, bufSizeX, bufSizeY, gdal.Float32, []string{})
 	// if err != nil {
 	// 	return err
 	// }
-	log.Print("calling gdal RasterIO")
 	// C++ API
 	// https://gdal.org/api/gdalrasterband_cpp.html
 	err = g.r.IO(gdal.Read, row, col, bufSizeX, bufSizeY, buf, bufSizeX, bufSizeY, 0, 0)
 	if err != nil {
 		return err
 	}
-	// err := g.r.IO(gdal.Read, 0, 0, 1, 1, buf, 1, 1, 0, 0)
-	// err := g.r.ReadBlock(int(math.Round(row)), int(math.Round(col)), ptr)
-	// p.Elevation = (*float64)(ptr)
-	// p.Elevation = &v
-	log.Print(buf)
+	log.Print(g.r.GetUnitType())
+	v := float64(buf[0])
+	p.Elevation = &v
 	return nil
 }
