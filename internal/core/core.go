@@ -371,9 +371,6 @@ func AddElevation(cfg config.Config) error {
 
 	// spin off goroutines to update
 	var wg sync.WaitGroup
-	// var eg errgroup.Group
-	// errs := make(chan error)
-	// wgDone := make(chan bool)
 	for {
 		// check if there are still null vals in ground_elev
 		points, err := st.GetEmptyElevationPoints(d, 1, 0)
@@ -381,15 +378,16 @@ func AddElevation(cfg config.Config) error {
 			return err
 		}
 		if len(points) == 0 {
+			log.Print("Elevation data is completely populated for dataset=", d.Name)
 			break
 		}
 		for i := 0; i < global.ELEVATION_NO_PARALLEL_ROUTINES; i++ {
 			wg.Add(1)
 			go func(i int) {
-				defer func() {
-					log.Print("thread ", i, " finished")
-					wg.Done()
-				}()
+				// defer func() {
+				// 	log.Print("thread ", i, " finished")
+				// 	wg.Done()
+				// }()
 				err := addElevationToInventory(
 					st,
 					global.ELEVATION_BATCHSIZE,
@@ -398,10 +396,12 @@ func AddElevation(cfg config.Config) error {
 				)
 				if err != nil {
 					// there's no write conflict in addElevationToInventory, just a single writer,
-					// function fails on invalid read
-					// this is chaosmonkey compliant, just terminate routine on error
+					// function fails on invalid read while another routine is writing to file
+					// this is chaosmonkey compliant, just start another process until done
 					log.Print(err)
 				}
+				log.Print("thread ", i, " finished")
+				wg.Done()
 			}(i)
 		}
 		wg.Wait()

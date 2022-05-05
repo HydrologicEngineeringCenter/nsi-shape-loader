@@ -517,6 +517,7 @@ func (st *PSStore) UpdateElevationAtPoint(d model.Dataset, points elevation.Poin
 			}
 		}
 	}
+	// flush Tx queue
 	err = tx.Commit()
 	if err != nil {
 		return err
