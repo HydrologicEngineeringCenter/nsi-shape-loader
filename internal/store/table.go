@@ -3,31 +3,21 @@ package store
 import (
 	"fmt"
 
-	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	"github.com/usace/goquery"
 )
 
 const (
-	DbSchema = config.DB_SCHEMA
+	DbSchema = global.DB_SCHEMA
 )
-
-var accessTable = goquery.TableDataSet{
-	Name:   "access",
-	Schema: DbSchema,
-	Statements: map[string]string{
-		"selectId": `select id from access where dataset_id=$1 and value=$2`,
-		"insert":   `insert into access (dataset_id, access_group, role, permission) values ($1, $2, $3, $4) returning id`,
-	},
-	Fields: model.Domain{},
-}
 
 var datasetTable = goquery.TableDataSet{
 	Name:   "dataset",
 	Schema: DbSchema,
 	Statements: map[string]string{
 		"selectId":   `select id from dataset where name=$1 and version=$2 and purpose=$3 and quality_id=$4`,
-		"select":     `select * from dataset where name=$1 and version=$2 and purpose=$3 and quality_id=$4`,
+		"select":     `select * from dataset where name=$1 and version=$2 and quality_id=$3`,
 		"selectById": `select * from dataset where id=$1`,
 		"insertNullShape": `insert into dataset (
             name,
@@ -41,8 +31,18 @@ var datasetTable = goquery.TableDataSet{
             quality_id,
             group_id
         ) values ($1, $2, $3, $4, ST_Envelope('POLYGON((0 0, 0 0, 0 0, 0 0))'::geometry), $5, $6, $7, $8, $9) returning id`,
-		"updateBBox":           fmt.Sprintf(`update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from %s.{table_name}) where id=$1`, DbSchema),
-		"structureInInventory": fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
+		"updateBBox":            fmt.Sprintf(`update dataset set shape=(select ST_Envelope(ST_Collect(shape)) from %s.{table_name}) where id=$1`, DbSchema),
+		"structureInInventory":  fmt.Sprintf(`select fd_id from %s.{table_name} where X=$1 and Y=$2`, DbSchema),
+		"elevationColumnExists": `select exists (select 1 from information_schema.columns where table_schema=$1 and table_name=$2 and column_name=$3)`,
+		"addElevColumn":         fmt.Sprintf(`alter table %s.{table_name} add column %s double precision`, DbSchema, global.ELEVATION_COLUMN_NAME),
+		"selectEmptyElevationCoords": fmt.Sprintf(
+			// "select fd_id, X, Y, %s from %s.{table_name} where %s is null order by random() limit 3",
+			"select fd_id, X, Y, %s from %s.{table_name} where %s is null limit $1 offset $2",
+			global.ELEVATION_COLUMN_NAME,
+			DbSchema,
+			global.ELEVATION_COLUMN_NAME,
+		), // TODO limit 10 for test
+		"updateElevation": fmt.Sprintf("update %s.{table_name} set %s=$1 where fd_id=$2", DbSchema, global.ELEVATION_COLUMN_NAME),
 	},
 }
 

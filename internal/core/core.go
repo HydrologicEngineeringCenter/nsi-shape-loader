@@ -8,9 +8,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/config"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/elevation"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/files"
+	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/global"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/ingest"
 	"github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/model"
 	shape "github.com/HydrologicEngineeringCenter/shape-sql-loader/internal/shp"
@@ -22,29 +25,27 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-func Core(c *cli.Context) error {
-	log.Printf("============================================================")
-	log.Printf("                     SEAHORSE v%s", config.APP_VERSION)
-	log.Printf("============================================================")
+func Core(c *cli.Context, m types.Mode) error {
+	log.Printf("%s v%s - initializing...", global.APP_NAME, global.APP_VERSION)
 	//  pre - generate config xls from shp
 	//  upload - upload based on data and metadata from xls and shp
 	//  access - change access group and role
-	cfg, err := config.NewConfig(c)
+	cfg, err := config.NewConfig(c, m)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Prep mode generates the metadata xls required by Upload
 	if cfg.Mode == types.Prep {
 		err = Prep(cfg)
 	}
-	// Upload mode uploads the dataset and associated metadata
 	if cfg.Mode == types.Upload {
 		err = Upload(cfg)
 	}
-	// Access mode change access permission of groups
 	if cfg.Mode == types.Access {
 		err = ChangeAccess(cfg)
+	}
+	if cfg.Mode == types.Elevation {
+		err = AddElevation(cfg)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -56,8 +57,8 @@ func Core(c *cli.Context) error {
 func Prep(cfg config.Config) error {
 
 	// copy xls file
-	const baseXlsSrc = config.BASE_META_XLSX_PATH
-	const cpXlsDest = config.COPY_XLSX_PATH
+	const baseXlsSrc = global.BASE_META_XLSX_PATH
+	const cpXlsDest = global.COPY_XLSX_PATH
 	err := files.Copy(baseXlsSrc, cpXlsDest)
 	if err != nil {
 		return err
@@ -248,7 +249,7 @@ func Upload(cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	sqlArg := store.GenerateSqlArg(shp2DbName, strings.TrimSuffix(
+	sqlArg := shape.GenerateSqlArg(shp2DbName, strings.TrimSuffix(
 		filepath.Base(cfg.ShpPath),
 		filepath.Ext(cfg.ShpPath),
 	))
@@ -327,7 +328,7 @@ func ChangeAccess(cfg config.Config) error {
 	}
 	if m.Id == uuid.Nil {
 		// user has no association to the group
-		err = st.AddMember(&m)
+		err = store.AddRow(st, &m)
 	} else {
 		// user association exists
 		err = st.UpdateMemberRole(&m)
@@ -337,5 +338,96 @@ func ChangeAccess(cfg config.Config) error {
 }
 
 func AddElevation(cfg config.Config) error {
+	st, err := store.NewStore(cfg)
+	if err != nil {
+		return err
+	}
+	q := model.Quality{
+		Value: cfg.ElevationConfig.Quality,
+	}
+	err = st.GetQualityId(&q)
+	if err != nil {
+		return err
+	}
+	d := model.Dataset{
+		Name:      cfg.ElevationConfig.Dataset,
+		Version:   cfg.ElevationConfig.Version,
+		QualityId: q.Id,
+	}
+	err = st.GetDataset(&d)
+	if err != nil {
+		return err
+	}
+	elevColumnExists, err := st.ElevationColumnExists(d)
+	if err != nil {
+		return err
+	}
+	if !elevColumnExists {
+		err = st.AddElevationColumn(d)
+		if err != nil {
+			return err
+		}
+	}
+
+	// spin off goroutines to update
+	var wg sync.WaitGroup
+	for {
+		// check if there are still null vals in ground_elev
+		points, err := st.GetEmptyElevationPoints(d, 1, 0)
+		if err != nil {
+			return err
+		}
+		if len(points) == 0 {
+			log.Print("Elevation data is completely populated for dataset=", d.Name)
+			break
+		}
+		for i := 0; i < global.ELEVATION_NO_PARALLEL_ROUTINES; i++ {
+			wg.Add(1)
+			go func(i int) {
+				// defer func() {
+				// 	log.Print("thread ", i, " finished")
+				// 	wg.Done()
+				// }()
+				err := addElevationToInventory(
+					st,
+					global.ELEVATION_BATCHSIZE,
+					i*global.ELEVATION_BATCHSIZE,
+					d,
+				)
+				if err != nil {
+					// there's no write conflict in addElevationToInventory, just a single writer,
+					// function fails on invalid read while another routine is writing to file
+					// this is chaosmonkey compliant, just start another process until done
+					log.Print(err)
+				}
+				log.Print("thread ", i, " finished")
+				wg.Done()
+			}(i)
+		}
+		wg.Wait()
+		// if err := <-errs; err != nil {
+		// 	return err
+		// }
+	}
+	return nil
+}
+
+func addElevationToInventory(s *store.PSStore, batchSize int, offset int, d model.Dataset) error {
+	points, err := s.GetEmptyElevationPoints(d, batchSize, offset)
+	if err != nil {
+		return err
+	}
+	eStore, err := elevation.NewElevationAccessor(points.BoundingBox())
+	if err != nil {
+		return err
+	}
+	err = eStore.GetElevation(points)
+	if err != nil {
+		return err
+	}
+	err = s.UpdateElevationAtPoint(d, points)
+	if err != nil {
+		return err
+	}
 	return nil
 }

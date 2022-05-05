@@ -75,20 +75,39 @@
       ]
     },
     {
-      "name": "access-alt",
+      "name": "mod user",
       "type": "go",
       "request": "launch",
       "mode": "auto",
       "program": "/workspaces/shape-sql-loader",
       "args": [
-        "--mode",
-        "access",
+        "mod",
+        "user",
         "--group",
         "nsidev",
         "--role",
         "user",
         "--user",
-        "tmnt",
+        "adsadsa",
+        "--sqlConn",
+        "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+      ]
+    },
+    {
+      "name": "mod elevation",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "/workspaces/shape-sql-loader",
+      "args": [
+        "mod",
+        "elevation",
+        "--dataset",
+        "testDataset",
+        "--version",
+        "0.0.2",
+        "--quality",
+        "high",
         "--sqlConn",
         "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
       ]
