@@ -401,7 +401,6 @@ func AddElevation(cfg config.Config) error {
 					// function fails on invalid read
 					// this is chaosmonkey compliant, just terminate routine on error
 					log.Print(err)
-					// errs <- err
 				}
 			}(i)
 		}
@@ -418,7 +417,7 @@ func addElevationToInventory(s *store.PSStore, batchSize int, offset int, d mode
 	if err != nil {
 		return err
 	}
-	eStore, err := elevation.NewElevationAccessor(points)
+	eStore, err := elevation.NewElevationAccessor(points.BoundingBox())
 	if err != nil {
 		return err
 	}

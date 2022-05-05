@@ -28,8 +28,7 @@ type ElevationAccessor struct {
 	cacheObjs   *[]cacheItem // this wrangling is so convoluted TODO maybe refactor
 }
 
-func NewElevationAccessor(p Points) (ElevationAccessor, error) {
-	b := p.BoundingBox()
+func NewElevationAccessor(b BoundingBox) (ElevationAccessor, error) {
 	mq := NewNationalMapQuery()
 	q, err := mq.QueryBoundingBox(b)
 	if err != nil {

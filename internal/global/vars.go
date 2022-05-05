@@ -8,7 +8,7 @@ const (
 	BASE_META_XLSX_PATH            = "./assets/baseMetaData.xlsx"
 	COPY_XLSX_PATH                 = "./metadata.xlsx"
 	ELEVATION_COLUMN_NAME          = "ground_elev"
-	ELEVATION_BATCHSIZE            = 1000
+	ELEVATION_BATCHSIZE            = 10000
 	ELEVATION_NO_PARALLEL_ROUTINES = 4
 )
 

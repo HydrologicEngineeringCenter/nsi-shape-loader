@@ -490,7 +490,7 @@ func (st *PSStore) GetEmptyElevationPoints(d model.Dataset, count int, offset in
 
 func (st *PSStore) UpdateElevationAtPoint(d model.Dataset, points elevation.Points) error {
 	// batchSize here is the db update batchSize, not to be confused with the goroutine batchSize
-	batchSize := 100
+	batchSize := 1000
 	var tx goquery.Tx
 	var err error
 	tx, err = st.DS.Transaction()
