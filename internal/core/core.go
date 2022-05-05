@@ -328,10 +328,17 @@ func ChangeAccess(cfg config.Config) error {
 	}
 	if m.Id == uuid.Nil {
 		// user has no association to the group
-		err = store.AddRow(st, &m)
+		// err = store.AddRow(st, &m)
+		err = st.AddMember(&m)
+		if err != nil {
+			return err
+		}
 	} else {
 		// user association exists
 		err = st.UpdateMemberRole(&m)
+		if err != nil {
+			return err
+		}
 	}
 	log.Printf("member.user_id=%s now exists as member.role=%s for group.name=%s", m.UserId, m.Role, g.Name)
 	return err
@@ -357,6 +364,9 @@ func AddElevation(cfg config.Config) error {
 	err = st.GetDataset(&d)
 	if err != nil {
 		return err
+	}
+	if d.TableName == "" {
+		return errors.New(fmt.Sprintf("Unable to find dataset=%s version=%s quality=%s", d.Name, d.Version, q.Value))
 	}
 	elevColumnExists, err := st.ElevationColumnExists(d)
 	if err != nil {
