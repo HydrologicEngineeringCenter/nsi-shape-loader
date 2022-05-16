@@ -2,11 +2,13 @@
 
 seahorse is intended to be a sysadmin tool to upload a set of shp files
 to the new NSI database. PostGIS database instance must be accessible by the
-upload environment. The tool requires ogr2ogr and assets/metadataBase.xlsx.
+upload environment. The tool requires ogr2ogr, folder assets/dem/,
+and assets/metaTemplate.xlsx.
 
 Database setup and cleanup SQL scripts are stored in scripts/sql/. All tables
 must be created inside a specified database schema (changeable in
 internal/global/vars.go). Field X, and Y must exist for each inventory row.
+Set PG_USE_COPY=YES as env var to massively boost upload speed.
 
 ```golang
     1. Generate metadata template

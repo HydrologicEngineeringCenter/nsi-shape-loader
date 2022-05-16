@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"log"
@@ -275,26 +276,39 @@ func Upload(cfg config.Config) error {
 		}
 		if !flagDataInStore { // data has not yet been added to store
 			log.Printf("table=%s exists for dataset=%s. Appending rows...", d.TableName, d.Name)
-			execStr = fmt.Sprintf(`ogr2ogr -append -update -f "PostgreSQL" PG:"%s" %s -lco precision=no -nln %s.%s`,
+			execStr = fmt.Sprintf(`ogr2ogr -append -update -f "PostgreSQL" PG:"%s" %s -lco precision=no -lco fid=fd_id -lco geometry_name=shape -nln %s.%s %s`,
 				strings.ReplaceAll(cfg.StoreConfig.ConnStr, "database=", "dbname="),
-				cfg.ShpPath, store.DbSchema, d.TableName,
+				cfg.ShpPath, store.DbSchema, d.TableName, sqlArg,
 			)
 		} else {
 			return errors.New("Upload failed - shp file has already been uploaded")
 		}
 	}
-	// fmt.Println(execStr)
-	_, err = exec.Command(
+	// log.Print(execStr)
+	cmd := exec.Command(
 		"sh", "-c", execStr,
-	).Output()
+	)
+	// setting up pipeline
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-	} else {
-		err = st.UpdateDatasetBBox(d)
-		if err != nil {
-			return err
-		}
-		log.Printf("Data uploaded to dataset.name=%s dataset.table_name=%s", d.Name, d.TableName)
+		return err
 	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	// read command's stdout line by line
+	in := bufio.NewScanner(stdout)
+	for in.Scan() {
+		log.Printf(in.Text()) // write each line to your log, or anything you need
+	}
+	if err := in.Err(); err != nil {
+		log.Printf("ogr2ogr error: %s", err)
+	}
+	err = st.UpdateDatasetBBox(d)
+	if err != nil {
+		return err
+	}
+	log.Printf("Data uploaded to dataset.name=%s dataset.table_name=%s", d.Name, d.TableName)
 	return err
 }
 

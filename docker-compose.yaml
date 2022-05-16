@@ -15,8 +15,8 @@ services:
       - ../xlscellreader:/workspaces/xlscellreader
       - ../gdal:/workspaces/gdal
       - ../filestore:/workspaces/filestore
-    env_file:
-      - .devcontainer/devcontainer.env
+    environment:
+      - PG_USE_COPY=YES
     working_dir: /workspaces/shape-sql-loader
     tty: true
     entrypoint: ["bash"]
