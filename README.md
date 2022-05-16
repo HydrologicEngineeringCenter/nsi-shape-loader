@@ -1,6 +1,6 @@
-# shape-sql-loader (seahorse)
+# shape-sql-loader (sael)
 
-seahorse is intended to be a sysadmin tool to upload a set of shp files
+sael (Structure dAtabase Editing pLatform) is intended to be a sysadmin tool to upload a set of shp files
 to the new NSI database. PostGIS database instance must be accessible by the
 upload environment. The tool requires ogr2ogr, folder assets/dem/,
 and assets/metaTemplate.xlsx.
@@ -11,6 +11,9 @@ internal/global/vars.go). Field X, and Y must exist for each inventory row.
 Set PG_USE_COPY=YES as env var to massively boost upload speed.
 
 ```golang
+    0. To build
+        go build -o sael .
+
     1. Generate metadata template
         go run . prepare --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp
 

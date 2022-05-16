@@ -2,7 +2,7 @@ package global
 
 // APP
 const (
-	APP_NAME    = "seahorse"
+	APP_NAME    = "sael"
 	APP_VERSION = "0.9.1"
 	DB_SCHEMA   = "nsiv291test" // CAUTION! CHANGING TO A PRODUCTION SCHEMA CAN OVERRIDE DATA
 )
