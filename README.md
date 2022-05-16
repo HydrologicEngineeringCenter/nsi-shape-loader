@@ -15,19 +15,19 @@ Set PG_USE_COPY=YES as env var to massively boost upload speed.
         go build -o sael .
 
     1. Generate metadata template
-        go run . prepare --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp
+        ./sael prepare --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15001.shp
 
     2. Fill in metadata xls file and upload
-        go run . mod inventory --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15003.shp --xlsPath /workspaces/shape-sql-loader/metadatatest.xlsx --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+        ./sael mod inventory --shpPath /workspaces/shape-sql-loader/test/nsi/NSI_V2_Archives/V2022/15003.shp --xlsPath /workspaces/shape-sql-loader/metadatatest.xlsx --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 
     Optional - To upload multiple shp files synchronously, use the included upload bash script
         uploadDir -x metadatatest.xlsx -d test/nsi/NSI_V2_Archives/V2022/ -s "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 
     3. Add user to group
-        go run . mod user --group nsidev --role admin --user user_id --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+        ./sael mod user --group nsidev --role admin --user user_id --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 
     4. To add elevation to a dataset
-        go run . mod elevation --dataset testDataset --version 0.0.2 --quality high --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
+        ./sael mod elevation --dataset testDataset --version 0.0.2 --quality high --sqlConn "host=host.docker.internal port=25432 user=admin password=notPassword database=gis"
 ```
 
 Bonus VIM config: Delve can be used to start a headless debug server inside a
